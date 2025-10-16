@@ -3,110 +3,15 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>アニメ | ABEMA クローン</title>
+    <title>アニメ | SAKURA クローン</title>
     <meta
       name="description"
-      content="ABEMA『アニメ』ジャンルページのレイアウトを再現したクローンです。"
+      content="SAKURA『アニメ』ジャンルページのレイアウトを再現したクローンです。"
     >
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
     <div class="app-shell">
-      <aside class="side-nav" aria-label="サイドナビゲーション">
-        <div class="side-nav__logo">
-          <span class="side-nav__logo-word">ABEMA</span>
-          <span class="side-nav__logo-tag">ANIME</span>
-        </div>
-        <nav class="side-nav__menu" aria-label="メインメニュー">
-          <ul class="side-nav__list">
-            <li>
-              <a href="#" class="side-nav__link is-active" aria-current="page">
-                <span class="side-nav__icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" role="img">
-                    <path
-                      d="M4 10.4 12 4l8 6.4V20a1 1 0 0 1-1 1h-5.2a.8.8 0 0 1-.8-.8v-4.4h-4v4.4a.8.8 0 0 1-.8.8H5a1 1 0 0 1-1-1z"
-                      fill="currentColor"
-                    />
-                  </svg>
-                </span>
-                <span class="side-nav__label">ホーム</span>
-              </a>
-            </li>
-            <li>
-              <a href="#" class="side-nav__link">
-                <span class="side-nav__icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" role="img">
-                    <rect x="3.5" y="5.5" width="17" height="15" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.6" />
-                    <path d="M3 9h18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                    <circle cx="8.5" cy="13.5" r="1" fill="currentColor" />
-                    <circle cx="12" cy="13.5" r="1" fill="currentColor" />
-                    <circle cx="15.5" cy="13.5" r="1" fill="currentColor" />
-                  </svg>
-                </span>
-                <span class="side-nav__label">番組表</span>
-              </a>
-            </li>
-            <li>
-              <a href="#" class="side-nav__link">
-                <span class="side-nav__icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" role="img">
-                    <rect x="3.5" y="5.5" width="17" height="13" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.6" />
-                    <polygon points="10 9 15 12 10 15 10 9" fill="currentColor" />
-                  </svg>
-                </span>
-                <span class="side-nav__label">ビデオ</span>
-              </a>
-            </li>
-            <li>
-              <a href="#" class="side-nav__link">
-                <span class="side-nav__icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" role="img">
-                    <path
-                      d="M6.5 4.5h11a1 1 0 0 1 1 1v14l-6.5-3.4L5.5 19.5v-14a1 1 0 0 1 1-1z"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.6"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                </span>
-                <span class="side-nav__label">マイリスト</span>
-              </a>
-            </li>
-            <li>
-              <a href="#" class="side-nav__link">
-                <span class="side-nav__icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" role="img">
-                    <path
-                      d="m12 4 2 4.2 4.7.4-3.5 3.1 1 4.6L12 14.6 7.8 16.3l1-4.6L5.3 8.6l4.7-.4z"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.6"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                </span>
-                <span class="side-nav__label">プレミアム</span>
-              </a>
-            </li>
-            <li>
-              <a href="#" class="side-nav__link">
-                <span class="side-nav__icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" role="img">
-                    <circle cx="12" cy="12" r="7.5" fill="none" stroke="currentColor" stroke-width="1.6" />
-                    <path d="M12 8v4l2.5 1.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
-                  </svg>
-                </span>
-                <span class="side-nav__label">視聴履歴</span>
-              </a>
-            </li>
-          </ul>
-        </nav>
-        <div class="side-nav__footer">
-          <p>アプリ限定エピソードを毎日更新中</p>
-          <button class="side-nav__download">アプリDL</button>
-        </div>
-      </aside>
       <div class="main-column">
         <header class="top-nav">
           <button
@@ -120,13 +25,12 @@
             <span></span>
             <span></span>
           </button>
-          <a class="top-nav__logo" href="#">ABEMA</a>
+          <a class="top-nav__logo" href="#">SAKURA</a>
           <nav class="top-nav__links" aria-label="トップメニュー">
-            <a href="#">配信中</a>
-            <a href="#" class="is-active">アニメ</a>
-            <a href="#">ドラマ</a>
-            <a href="#">映画</a>
-            <a href="#">韓流・華流</a>
+            <a href="#" class="is-active">人気</a>
+            <a href="#">急上昇</a>
+            <a href="#">新着</a>
+            <a href="#">動画</a>
           </nav>
           <form class="top-nav__search" role="search">
             <input
@@ -142,14 +46,6 @@
               </svg>
             </button>
           </form>
-          <div class="top-nav__actions">
-            <button class="top-nav__action top-nav__action--outline" type="button">
-              ログイン
-            </button>
-            <button class="top-nav__action top-nav__action--solid" type="button">
-              無料で新規登録
-            </button>
-          </div>
         </header>
         <div class="mobile-nav" id="mobile-nav" data-mobile-nav aria-hidden="true">
           <div class="mobile-nav__panel" role="dialog" aria-modal="true" aria-labelledby="mobile-nav-title">
@@ -161,20 +57,11 @@
               </button>
             </div>
             <nav class="mobile-nav__links" aria-label="モバイルメニュー">
-              <a href="#">配信中</a>
-              <a href="#" class="is-active">アニメ</a>
-              <a href="#">ドラマ</a>
-              <a href="#">映画</a>
-              <a href="#">韓流・華流</a>
+              <a href="#" class="is-active">人気</a>
+              <a href="#">急上昇</a>
+              <a href="#">新着</a>
+              <a href="#">動画</a>
             </nav>
-            <div class="mobile-nav__actions">
-              <button class="top-nav__action top-nav__action--outline" type="button">
-                ログイン
-              </button>
-              <button class="top-nav__action top-nav__action--solid" type="button">
-                無料で新規登録
-              </button>
-            </div>
           </div>
         </div>
         <main class="content">
@@ -186,10 +73,10 @@
                 「ダンプリ攻略戦、開幕」
               </h1>
               <p class="hero__meta">
-                2025年10月14日(火) 21:00 配信開始 / ABEMAオリジナル先行
+                2025年10月14日(火) 21:00 配信開始 / SAKURAオリジナル先行
               </p>
               <p class="hero__description">
-                異世界の美味しい瞬間をABEMAだけのスペシャル編集でお届け。
+                異世界の美味しい瞬間をSAKURAだけのスペシャル編集でお届け。
                 食材が尽きる前にダンジョン最深部に辿り着けるか!?
               </p>
               <div class="hero__actions">
@@ -208,7 +95,7 @@
               <li><button type="button" class="chip chip--active">注目</button></li>
               <li><button type="button" class="chip">最新話</button></li>
               <li><button type="button" class="chip">シリーズ一挙</button></li>
-              <li><button type="button" class="chip">ABEMA独占</button></li>
+              <li><button type="button" class="chip">SAKURA独占</button></li>
               <li><button type="button" class="chip">無料</button></li>
               <li><button type="button" class="chip">名作</button></li>
               <li><button type="button" class="chip">キッズ</button></li>
@@ -317,7 +204,7 @@
                     Re:ゼロから始める異世界生活 3rd season #15
                   </h3>
                   <p class="program-card__meta">
-                    2025年10月10日(金) 23:00 更新 / ABEMA独占コメント付き
+                    2025年10月10日(金) 23:00 更新 / SAKURA独占コメント付き
                   </p>
                   <div class="program-card__cta">
                     <span>再生する</span>
@@ -600,7 +487,7 @@
                     無職転生Ⅱ ～異世界行ったら本気だす～ #21「決意の一歩」
                   </h3>
                   <p class="program-card__meta">
-                    2025年10月12日(日) 0:00 更新 / ABEMA独占コメント付き
+                    2025年10月12日(日) 0:00 更新 / SAKURA独占コメント付き
                   </p>
                   <div class="program-card__cta">
                     <span>再生する</span>
@@ -832,7 +719,7 @@
             <a href="#">採用情報</a>
           </div>
           <p class="footer__copyright">
-            © 2025 ABEMA Clone. 本ページは学習・検証用に作成したクローンUIです。
+            © 2025 SAKURA Clone. 本ページは学習・検証用に作成したクローンUIです。
           </p>
         </footer>
       </div>
