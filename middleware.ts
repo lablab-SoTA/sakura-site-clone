@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-import { AGE_COOKIE_NAME } from "./lib/constants";
+import { AGE_VERIFIED_QUERY_PARAM, AGE_VERIFIED_QUERY_VALUE } from "./lib/constants";
 
 const AGE_GATE_PATH = "/age-gate";
 
@@ -36,9 +36,10 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const hasAgeCookie = request.cookies.get(AGE_COOKIE_NAME)?.value === "1";
+  const hasAgeVerificationFlag =
+    request.nextUrl.searchParams.get(AGE_VERIFIED_QUERY_PARAM) === AGE_VERIFIED_QUERY_VALUE;
 
-  if (!hasAgeCookie) {
+  if (!hasAgeVerificationFlag) {
     const url = request.nextUrl.clone();
     url.pathname = AGE_GATE_PATH;
     const redirectTo = `${pathname}${request.nextUrl.search}`;

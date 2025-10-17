@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
+
+import AgeGateQueryReset from "@/components/AgeGateQueryReset";
 
 import "./globals.css";
 
@@ -19,6 +22,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ja">
       <body>
+        <Suspense fallback={null}>
+          <AgeGateQueryReset />
+        </Suspense>
         <div className="layout">
           <header className="layout__header">
             <Link href="/" className="brand">

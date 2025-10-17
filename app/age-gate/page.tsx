@@ -7,12 +7,12 @@ type AgeGatePageProps = {
 };
 
 export default async function AgeGatePage({ searchParams }: AgeGatePageProps) {
-  const resolvedParams = (await searchParams) ?? {};
-  const rawError = resolvedParams.error;
+  const params = (await searchParams) ?? {};
+  const rawError = params.error;
   const errorParam = Array.isArray(rawError) ? rawError[0] : rawError;
   const hasError = errorParam === "consent_required";
 
-  const rawRedirect = resolvedParams.redirectTo;
+  const rawRedirect = params.redirectTo;
   const redirectToParam = Array.isArray(rawRedirect) ? rawRedirect[0] : rawRedirect;
   const redirectValue =
     redirectToParam && redirectToParam.startsWith("/") ? redirectToParam : "/";
