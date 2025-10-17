@@ -1,0 +1,10 @@
+node_modules
+.next
+.open-next
+.wrangler
+dist
+build
+npm-debug.log*
+*.local
+tsconfig.tsbuildinfo
+.DS_Store

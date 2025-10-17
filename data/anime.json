@@ -1,0 +1,22 @@
+[
+  {
+    "slug": "sakura-dreams",
+    "title": "SAKURA Dreams",
+    "synopsis": "舞い散る桜が導く異世界で、記憶を無くした青年が少女と出会い、季節を取り戻す旅に出る。",
+    "thumbnail": "/images/thumbnails/sakura-placeholder.svg",
+    "duration": 1460,
+    "year": 2025,
+    "rating": "G",
+    "genres": ["ファンタジー", "ドラマ"],
+    "video": {
+      "type": "mp4",
+      "src": "/videos/sample.mp4",
+      "poster": "/images/thumbnails/sakura-placeholder.svg"
+    },
+    "credits": {
+      "director": "Hanami Kaze",
+      "studio": "Studio Sakura",
+      "cast": ["Kaito Aiba", "Yuri Minami"]
+    }
+  }
+]
