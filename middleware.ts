@@ -46,15 +46,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  const response = NextResponse.next();
-  response.cookies.set({
-    name: AGE_COOKIE_NAME,
-    value: "",
-    maxAge: 0,
-    path: "/",
-  });
-
-  return response;
+  return NextResponse.next();
 }
 
 export const config = {
