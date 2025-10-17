@@ -23,9 +23,22 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  const destination = request.headers.get("sec-fetch-dest");
+  const accept = request.headers.get("accept") ?? "";
+  const isDocumentRequest =
+    destination === "document" || (!destination && accept.includes("text/html"));
+
+  if (!isDocumentRequest) {
+    return NextResponse.next();
+  }
+
+  if (pathname === AGE_GATE_PATH) {
+    return NextResponse.next();
+  }
+
   const hasAgeCookie = request.cookies.get(AGE_COOKIE_NAME)?.value === "1";
 
-  if (!hasAgeCookie && pathname !== AGE_GATE_PATH) {
+  if (!hasAgeCookie) {
     const url = request.nextUrl.clone();
     url.pathname = AGE_GATE_PATH;
     const redirectTo = `${pathname}${request.nextUrl.search}`;
@@ -33,17 +46,15 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (hasAgeCookie && pathname === AGE_GATE_PATH) {
-    const url = request.nextUrl.clone();
-    const param = request.nextUrl.searchParams.get("redirectTo") ?? "/";
-    const target = param.startsWith("/") ? param : "/";
-    const [nextPath, nextSearch = ""] = target.split("?");
-    url.pathname = nextPath || "/";
-    url.search = nextSearch ? `?${nextSearch}` : "";
-    return NextResponse.redirect(url);
-  }
+  const response = NextResponse.next();
+  response.cookies.set({
+    name: AGE_COOKIE_NAME,
+    value: "",
+    maxAge: 0,
+    path: "/",
+  });
 
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {

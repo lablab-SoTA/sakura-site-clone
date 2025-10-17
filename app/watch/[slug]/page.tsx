@@ -42,12 +42,14 @@ export default async function WatchPage({ params }: WatchPageProps) {
     notFound();
   }
 
+  const playerPoster = anime.video.poster ?? anime.thumbnail;
+
   return (
     <div className="watch-page">
       <div className="player-wrapper">
         <Player
           src={anime.video.src}
-          poster={anime.video.poster}
+          poster={playerPoster}
           title={anime.title}
           controls
         />

@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import type { Anime } from "@/lib/anime";
+import { SAKURA_THUMB_PLACEHOLDER } from "@/lib/placeholders";
 
 type VideoCardProps = {
   anime: Anime;
@@ -12,10 +13,12 @@ function formatDuration(seconds: number) {
 }
 
 export default function VideoCard({ anime }: VideoCardProps) {
+  const thumbSrc = anime.thumbnail || anime.video.poster || SAKURA_THUMB_PLACEHOLDER;
+
   return (
     <Link href={`/watch/${anime.slug}`} className="card">
       <img
-        src={anime.thumbnail}
+        src={thumbSrc}
         alt={`${anime.title}のサムネイル`}
         className="card__thumb"
         loading="lazy"
