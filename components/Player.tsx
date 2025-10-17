@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 
 import Hls from "hls.js";
 
@@ -25,7 +32,7 @@ export default function Player({
   const [isPlaying, setIsPlaying] = useState(autoPlay);
   const [showOverlay, setShowOverlay] = useState(true);
   const hideTimeoutRef = useRef<number | null>(null);
-  const [videoOrientation, setVideoOrientation] = useState<"landscape" | "portrait" | "square">("landscape");
+  const [videoDimensions, setVideoDimensions] = useState({ width: 16, height: 9 });
   const resolvedPoster = poster || SAKURA_THUMB_PLACEHOLDER;
 
   const clearHideTimeout = useCallback(() => {
@@ -96,34 +103,42 @@ export default function Player({
     return undefined;
   }, [src]);
 
+  const updateDimensions = useCallback((video: HTMLVideoElement | null) => {
+    if (!video) {
+      return;
+    }
+
+    const { videoWidth, videoHeight } = video;
+    if (!videoWidth || !videoHeight) {
+      return;
+    }
+
+    setVideoDimensions((current) => {
+      if (current.width === videoWidth && current.height === videoHeight) {
+        return current;
+      }
+      return { width: videoWidth, height: videoHeight };
+    });
+  }, []);
+
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    const resolveOrientation = () => {
-      if (!video.videoWidth || !video.videoHeight) {
-        setVideoOrientation("landscape");
-        return;
-      }
+    const handleMetadata = () => updateDimensions(video);
 
-      const { videoWidth, videoHeight } = video;
+    video.addEventListener("loadedmetadata", handleMetadata);
+    video.addEventListener("loadeddata", handleMetadata);
 
-      if (videoHeight > videoWidth * 1.05) {
-        setVideoOrientation("portrait");
-      } else if (videoWidth > videoHeight * 1.05) {
-        setVideoOrientation("landscape");
-      } else {
-        setVideoOrientation("square");
-      }
-    };
-
-    video.addEventListener("loadedmetadata", resolveOrientation);
-    resolveOrientation();
+    if (video.readyState >= 1) {
+      handleMetadata();
+    }
 
     return () => {
-      video.removeEventListener("loadedmetadata", resolveOrientation);
+      video.removeEventListener("loadedmetadata", handleMetadata);
+      video.removeEventListener("loadeddata", handleMetadata);
     };
-  }, []);
+  }, [src, updateDimensions]);
 
   const togglePlayback = useCallback(() => {
     setShowOverlay(true);
@@ -162,16 +177,33 @@ export default function Player({
 
   const overlayClassName = `player-overlay-button${showOverlay ? "" : " player-overlay-button--hidden"}`;
 
-  const containerClassName = useMemo(() => {
-    const base = "player-container";
-    if (videoOrientation === "portrait") return `${base} player-container--portrait`;
-    if (videoOrientation === "square") return `${base} player-container--square`;
-    return base;
-  }, [videoOrientation]);
+  const videoOrientation = useMemo<"landscape" | "portrait" | "square">(() => {
+    const { width, height } = videoDimensions;
+    if (height > width * 1.05) return "portrait";
+    if (width > height * 1.05) return "landscape";
+    return "square";
+  }, [videoDimensions]);
+
+  const containerStyle = useMemo(
+    () =>
+      ({
+        "--player-width": `${videoDimensions.width}`,
+        "--player-height": `${videoDimensions.height}`,
+        "--player-max-width":
+          videoOrientation === "portrait"
+            ? "420px"
+            : videoOrientation === "square"
+              ? "720px"
+              : "960px",
+      }) as CSSProperties,
+    [videoDimensions, videoOrientation],
+  );
 
   return (
     <div
-      className={containerClassName}
+      className="player-container"
+      style={containerStyle}
+      data-orientation={videoOrientation}
       onPointerMove={handlePointerMove}
       onPointerLeave={handlePointerLeave}
     >
@@ -188,6 +220,7 @@ export default function Player({
         disablePictureInPicture
         onClick={togglePlayback}
         onContextMenu={(event) => event.preventDefault()}
+        onLoadedMetadata={() => updateDimensions(videoRef.current)}
       >
         {!src.endsWith(".m3u8") && <source src={src} />}
         お使いのブラウザはこの動画形式に対応していません。

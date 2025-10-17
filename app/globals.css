@@ -27,6 +27,17 @@ body {
   min-height: 100vh;
 }
 
+body.age-gate-active .layout__header,
+body.age-gate-active .layout__header *,
+body.age-gate-active .layout__footer,
+body.age-gate-active .layout__footer * {
+  pointer-events: none;
+}
+
+body.age-gate-active .layout__header {
+  opacity: 0.35;
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -278,35 +289,32 @@ a {
   border-radius: var(--radius-lg);
   border: 1px solid var(--border);
   background: rgba(0, 0, 0, 0.65);
-  overflow: hidden;
   display: flex;
   justify-content: center;
   padding: clamp(8px, 2vw, 16px);
 }
 
 .player-container {
-  --player-aspect: 16 / 9;
+  --player-width: 16;
+  --player-height: 9;
+  --player-max-width: 960px;
   position: relative;
-  width: 100%;
-  max-width: 960px;
-  aspect-ratio: var(--player-aspect);
+  width: min(100%, var(--player-max-width));
   background: black;
   border-radius: calc(var(--radius-lg) - clamp(8px, 2vw, 16px));
   overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
-.player-container video {
-  width: 100%;
-  height: 100%;
+.player-container::before {
+  content: "";
   display: block;
-  object-fit: contain;
-  background: black;
+  width: 100%;
+  padding-top: calc(100% * var(--player-height) / var(--player-width));
 }
 
 .player {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   display: block;
@@ -349,16 +357,6 @@ a {
   opacity: 1;
   outline: 2px solid var(--accent);
   outline-offset: 3px;
-}
-
-.player-container--portrait {
-  --player-aspect: 9 / 16;
-  max-width: 640px;
-}
-
-.player-container--square {
-  --player-aspect: 1;
-  max-width: 720px;
 }
 
 .detail {
@@ -457,11 +455,7 @@ a {
 
   .player-container {
     border-radius: 14px;
-    max-width: 100%;
-  }
-
-  .player-container--portrait {
-    max-width: min(100%, 420px);
+    --player-max-width: 100%;
   }
 
   .watch-page {
