@@ -27,7 +27,7 @@ export default async function AgeGatePage({ searchParams }: AgeGatePageProps) {
           <div>
             <h1 className="age-gate__title">年齢確認</h1>
             <p className="age-gate__description">
-              SAKURA では、クリエイターによる個人制作アニメを配信しています。
+              xanime では、クリエイターによる個人制作アニメを配信しています。
               一部の作品には年齢制限が含まれる場合があるため、視聴前に年齢確認への同意をお願いしています。
             </p>
           </div>

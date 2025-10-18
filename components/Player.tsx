@@ -1,24 +1,18 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type CSSProperties,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 
 import Hls from "hls.js";
 
-import { SAKURA_THUMB_PLACEHOLDER } from "@/lib/placeholders";
+import { XANIME_THUMB_PLACEHOLDER } from "@/lib/placeholders";
 
 type PlayerProps = {
   src: string;
   poster?: string;
   title: string;
   autoPlay?: boolean;
-  controls?: boolean;
+  muted?: boolean;
+  showControls?: boolean;
 };
 
 export default function Player({
@@ -26,43 +20,23 @@ export default function Player({
   poster,
   title,
   autoPlay = false,
-  controls = true,
+  muted = false,
+  showControls = false,
 }: PlayerProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const [isPlaying, setIsPlaying] = useState(autoPlay);
-  const [showOverlay, setShowOverlay] = useState(true);
-  const hideTimeoutRef = useRef<number | null>(null);
   const [videoDimensions, setVideoDimensions] = useState({ width: 16, height: 9 });
-  const resolvedPoster = poster || SAKURA_THUMB_PLACEHOLDER;
-
-  const clearHideTimeout = useCallback(() => {
-    if (hideTimeoutRef.current !== null) {
-      window.clearTimeout(hideTimeoutRef.current);
-      hideTimeoutRef.current = null;
-    }
-  }, []);
-
-  const scheduleHide = useCallback(() => {
-    clearHideTimeout();
-    hideTimeoutRef.current = window.setTimeout(() => {
-      setShowOverlay(false);
-    }, 2400);
-  }, [clearHideTimeout]);
+  const resolvedPoster = poster || XANIME_THUMB_PLACEHOLDER;
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
     const handlePlay = () => {
-      setIsPlaying(true);
-      setShowOverlay(true);
-      scheduleHide();
+      // keep track implicitly via video state
     };
 
     const handlePause = () => {
-      setIsPlaying(false);
-      clearHideTimeout();
-      setShowOverlay(true);
+      // nothing else to do
     };
 
     video.addEventListener("play", handlePlay);
@@ -78,7 +52,7 @@ export default function Player({
       video.removeEventListener("pause", handlePause);
       video.removeEventListener("ended", handlePause);
     };
-  }, [clearHideTimeout, scheduleHide]);
+  }, []);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -102,6 +76,27 @@ export default function Player({
 
     return undefined;
   }, [src]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = muted;
+  }, [muted]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !autoPlay) return;
+
+    const attemptPlay = async () => {
+      try {
+        await video.play();
+      } catch {
+        // will remain paused; user can tap to resume
+      }
+    };
+
+    attemptPlay();
+  }, [autoPlay, src]);
 
   const updateDimensions = useCallback((video: HTMLVideoElement | null) => {
     if (!video) {
@@ -141,41 +136,14 @@ export default function Player({
   }, [src, updateDimensions]);
 
   const togglePlayback = useCallback(() => {
-    setShowOverlay(true);
-
     const video = videoRef.current;
     if (!video) return;
     if (video.paused) {
       void video.play();
-      scheduleHide();
     } else {
       video.pause();
-      clearHideTimeout();
     }
-  }, [clearHideTimeout, scheduleHide]);
-
-  const handlePointerMove = useCallback(() => {
-    setShowOverlay(true);
-    if (isPlaying) {
-      scheduleHide();
-    }
-  }, [isPlaying, scheduleHide]);
-
-  const handlePointerLeave = useCallback(() => {
-    if (isPlaying) {
-      scheduleHide();
-    } else {
-      clearHideTimeout();
-    }
-  }, [clearHideTimeout, isPlaying, scheduleHide]);
-
-  useEffect(() => {
-    return () => {
-      clearHideTimeout();
-    };
-  }, [clearHideTimeout]);
-
-  const overlayClassName = `player-overlay-button${showOverlay ? "" : " player-overlay-button--hidden"}`;
+  }, []);
 
   const videoOrientation = useMemo<"landscape" | "portrait" | "square">(() => {
     const { width, height } = videoDimensions;
@@ -204,19 +172,18 @@ export default function Player({
       className="player-container"
       style={containerStyle}
       data-orientation={videoOrientation}
-      onPointerMove={handlePointerMove}
-      onPointerLeave={handlePointerLeave}
     >
       <video
         ref={videoRef}
         className="player"
         poster={resolvedPoster}
-        controls={controls}
+        controls={showControls}
         autoPlay={autoPlay}
+        muted={muted}
         playsInline
         title={title}
         preload="metadata"
-        controlsList={controls ? "nodownload noplaybackrate" : undefined}
+        controlsList={showControls ? "nodownload noplaybackrate" : undefined}
         disablePictureInPicture
         onClick={togglePlayback}
         onContextMenu={(event) => event.preventDefault()}
@@ -225,16 +192,6 @@ export default function Player({
         {!src.endsWith(".m3u8") && <source src={src} />}
         お使いのブラウザはこの動画形式に対応していません。
       </video>
-      <button
-        type="button"
-        className={overlayClassName}
-        onClick={togglePlayback}
-        aria-label={isPlaying ? "一時停止" : "再生"}
-      >
-        <span aria-hidden>
-          {isPlaying ? "❚❚" : "▶"}
-        </span>
-      </button>
     </div>
   );
 }

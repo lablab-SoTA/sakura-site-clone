@@ -1,8 +1,8 @@
-# Sakura Video Site — Architecture Overview
+# xanime Video Site — Architecture Overview
 
 ## 今回行った変更
 - Next.js App Router プロジェクトを初期化し、`@opennextjs/cloudflare` + `wrangler` を利用した Workers/R2 デプロイ構成を追加。
-- 年齢確認フロー（`middleware.ts`、`app/age-gate/*`、Cookie 管理）を実装し、未同意ユーザーを `/age-gate` に誘導。
+- 年齢確認フロー（`middleware.ts`、`app/age-gate/*`、クエリフラグ管理）を実装し、未同意ユーザーを `/age-gate` に誘導。
 - 作品メタデータ (`data/anime.json`) と取得ユーティリティ (`lib/anime.ts`) を整備、トップページと視聴ページを動的生成。
 - HLS 対応のクライアントプレイヤー (`components/Player.tsx`) とカード UI (`components/VideoCard.tsx`) を作成。
 - Cloudflare 向け設定 (`wrangler.jsonc`、`open-next.config.ts`、`public/_headers`、`next.config.ts`) とアーキテクチャドキュメントを整備。
@@ -41,8 +41,8 @@ open-next.config.ts # OpenNext 設定 (R2 インクリメンタルキャッシ�
 ```
 
 ## 年齢確認フロー
-1. `middleware.ts` が Cookie `sakura_age_verified` を検査し、未設定なら `/age-gate` にリダイレクト。
-2. `/age-gate` のフォーム送信で `verifyAgeAction` がサーバーアクションとして呼び出され、Cookie を 1 年間保存。
+1. `middleware.ts` がクエリ `age=verified` を検査し、未設定なら `/age-gate` にリダイレクト。
+2. `/age-gate` のフォーム送信で `verifyAgeAction` がサーバーアクションとして呼び出され、リダイレクト先に `age=verified` クエリを付与。
 3. 同意後は元の URL (クエリ `redirectTo`) にリダイレクト。
 
 ## データ取得

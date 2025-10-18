@@ -1,7 +1,7 @@
 [
   {
-    "slug": "sakura-dreams",
-    "title": "SAKURA Dreams",
+    "slug": "xanime-dreams",
+    "title": "xanime Dreams",
     "synopsis": "舞い散る桜が導く異世界で、記憶を無くした青年が少女と出会い、季節を取り戻す旅に出る。",
     "thumbnail": "/images/thumbnails/1759459342027454046_P2fcuqmi.png",
     "duration": 1460,
@@ -15,8 +15,28 @@
     },
     "credits": {
       "director": "Hanami Kaze",
-      "studio": "Studio Sakura",
+      "studio": "Studio xanime",
       "cast": ["Kaito Aiba", "Yuri Minami"]
+    }
+  },
+  {
+    "slug": "xanime-onsen-yu",
+    "title": "xanime 湯けむり夜話",
+    "synopsis": "夜の露天風呂に立ちこめる湯けむりのなか、桜色の髪の少女が秘密の語らいを交わす幻想的なショートムービー。",
+    "thumbnail": "/images/thumbnails/sakura-onsen.jpg",
+    "duration": 360,
+    "year": 2025,
+    "rating": "R18",
+    "genres": ["ドラマ", "ロマンス"],
+    "video": {
+      "type": "mp4",
+      "src": "/videos/sakura-onsen.mp4",
+      "poster": "/images/thumbnails/sakura-onsen.jpg"
+    },
+    "credits": {
+      "director": "Miyabi Fubuki",
+      "studio": "Studio xanime",
+      "cast": ["Haruka Sato"]
     }
   }
 ]

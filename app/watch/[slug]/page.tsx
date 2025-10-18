@@ -19,15 +19,15 @@ export async function generateMetadata({ params }: WatchPageProps): Promise<Meta
 
   if (!anime) {
     return {
-      title: "作品が見つかりませんでした | SAKURA",
+      title: "作品が見つかりませんでした | xanime",
     };
   }
 
   return {
-    title: `${anime.title} | SAKURA`,
+    title: `${anime.title} | xanime`,
     description: anime.synopsis,
     openGraph: {
-      title: `${anime.title} | SAKURA`,
+      title: `${anime.title} | xanime`,
       description: anime.synopsis,
       images: anime.thumbnail ? [anime.thumbnail] : undefined,
     },
@@ -51,12 +51,12 @@ export default async function WatchPage({ params }: WatchPageProps) {
           src={anime.video.src}
           poster={playerPoster}
           title={anime.title}
-          controls
+          autoPlay
         />
       </div>
       <section className="detail">
         <div>
-          <span className="tag">SAKURA Originals</span>
+          <span className="tag">xanime Originals</span>
           <h1 className="hero__title watch-title">
             {anime.title}
           </h1>

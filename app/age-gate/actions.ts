@@ -16,7 +16,7 @@ export async function verifyAgeAction(formData: FormData) {
       ? redirectTarget
       : "/";
 
-  const destination = new URL(nextLocation, "https://sakura.local");
+  const destination = new URL(nextLocation, "https://xanime.local");
   destination.searchParams.set(AGE_VERIFIED_QUERY_PARAM, AGE_VERIFIED_QUERY_VALUE);
 
   redirect(`${destination.pathname}${destination.search}${destination.hash}`);

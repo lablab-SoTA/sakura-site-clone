@@ -1,14 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360">
   <defs>
     <linearGradient id="gradient" x1="0" y1="1" x2="1" y2="0">
-      <stop offset="0" stop-color="#0f172a" />
-      <stop offset="1" stop-color="#1d2540" />
+      <stop offset="0" stop-color="#f8f7fb" />
+      <stop offset="1" stop-color="#ffe0ef" />
     </linearGradient>
   </defs>
   <rect width="640" height="360" fill="url(#gradient)" />
-  <g fill="#f9bcff" font-family="Arial, Helvetica, sans-serif">
-    <text x="50%" y="52%" font-size="56" text-anchor="middle" letter-spacing="6">SAKURA</text>
-    <text x="50%" y="72%" font-size="20" text-anchor="middle" opacity="0.7">
+  <g fill="#d9488c" font-family="Arial, Helvetica, sans-serif">
+    <text x="50%" y="52%" font-size="56" text-anchor="middle" letter-spacing="6">xanime</text>
+    <text x="50%" y="72%" font-size="20" text-anchor="middle" opacity="0.66">
       CREATIVE ANIME SHOWCASE
     </text>
   </g>
