@@ -10,47 +10,81 @@ type WatchPageParams = {
   slug: string;
 };
 
-type WatchPageProps = {
-  params: Promise<WatchPageParams>;
+type WatchPageSearchParams = {
+  episode?: string;
 };
 
-export async function generateMetadata({ params }: WatchPageProps): Promise<Metadata> {
+type WatchPageProps = {
+  params: Promise<WatchPageParams>;
+  searchParams: Promise<WatchPageSearchParams>;
+};
+
+function resolveEpisodeId(rawEpisode?: string | string[]) {
+  if (Array.isArray(rawEpisode)) {
+    return rawEpisode[0];
+  }
+  return rawEpisode;
+}
+
+function formatDuration(seconds: number) {
+  if (!seconds) return "不明";
+  if (seconds < 60) {
+    return `${seconds}秒`;
+  }
+  return `${Math.round(seconds / 60)}分`;
+}
+
+export async function generateMetadata({ params, searchParams }: WatchPageProps): Promise<Metadata> {
   const { slug } = await params;
   const anime = await fetchAnimeBySlug(slug);
-
   if (!anime) {
     return {
       title: "作品が見つかりませんでした | xanime",
     };
   }
 
+  const { episode: episodeRaw } = (await searchParams) ?? {};
+  const episodeId = resolveEpisodeId(episodeRaw);
+  const activeEpisode = anime.episodes.find((item) => item.id === episodeId) ?? anime.episodes[0];
+
   return {
-    title: `${anime.title} | xanime`,
-    description: anime.synopsis,
+    title: `${activeEpisode.title} | ${anime.title} | xanime`,
+    description: activeEpisode.synopsis || anime.synopsis,
     keywords: [...anime.genres, "アニメ", "無料動画", "個人制作"],
     openGraph: {
-      title: `${anime.title} | xanime`,
-      description: anime.synopsis,
-      type: "video.movie",
-      images: anime.thumbnail ? [
-        {
-          url: anime.thumbnail,
-          width: 1200,
-          height: 630,
-          alt: anime.title,
-        }
-      ] : undefined,
+      title: `${activeEpisode.title} | ${anime.title} | xanime`,
+      description: activeEpisode.synopsis || anime.synopsis,
+      type: "video.episode",
+      images: activeEpisode.video.poster
+        ? [
+            {
+              url: activeEpisode.video.poster,
+              width: 1200,
+              height: 630,
+              alt: `${activeEpisode.title} - ${anime.title}`,
+            },
+          ]
+        : anime.thumbnail
+          ? [
+              {
+                url: anime.thumbnail,
+                width: 1200,
+                height: 630,
+                alt: anime.title,
+              },
+            ]
+          : undefined,
     },
     twitter: {
       card: "summary_large_image",
-      title: `${anime.title} | xanime`,
-      description: anime.synopsis,
-      images: anime.thumbnail ? [anime.thumbnail] : undefined,
+      title: `${activeEpisode.title} | ${anime.title} | xanime`,
+      description: activeEpisode.synopsis || anime.synopsis,
+      images: activeEpisode.video.poster ? [activeEpisode.video.poster] : anime.thumbnail ? [anime.thumbnail] : undefined,
     },
   };
 }
 
-export default async function WatchPage({ params }: WatchPageProps) {
+export default async function WatchPage({ params, searchParams }: WatchPageProps) {
   const { slug } = await params;
   const anime = await fetchAnimeBySlug(slug);
 
@@ -58,15 +92,21 @@ export default async function WatchPage({ params }: WatchPageProps) {
     notFound();
   }
 
-  const playerPoster = anime.video.poster ?? anime.thumbnail;
+  const { episode: episodeRaw } = (await searchParams) ?? {};
+  const episodeId = resolveEpisodeId(episodeRaw);
+  const activeEpisode = anime.episodes.find((item) => item.id === episodeId) ?? anime.episodes[0];
+  const otherEpisodes = anime.episodes.filter((item) => item.id !== activeEpisode.id);
+  const playerPoster = activeEpisode.video.poster ?? anime.thumbnail;
+  const views = activeEpisode.metrics?.views ?? anime.metrics?.views ?? 0;
+  const likes = activeEpisode.metrics?.likes ?? anime.metrics?.likes ?? 0;
 
   return (
     <div className="watch-page">
       <div className="player-wrapper">
         <Player
-          src={anime.video.src}
+          src={activeEpisode.video.src}
           poster={playerPoster}
-          title={anime.title}
+          title={`${activeEpisode.title} | ${anime.title}`}
           autoPlay
           showControls
         />
@@ -74,30 +114,55 @@ export default async function WatchPage({ params }: WatchPageProps) {
       <section className="detail">
         <div>
           <span className="tag">xanime Originals</span>
-          <h1 className="hero__title watch-title">
-            {anime.title}
-          </h1>
+          <h1 className="hero__title watch-title">{activeEpisode.title}</h1>
         </div>
         <div className="detail__meta">
+          <span>{anime.title}</span>
+          <span>{anime.creator ? `クリエイター: ${anime.creator}` : "クリエイター情報なし"}</span>
           <span>{anime.year}年</span>
           <span>{anime.rating}</span>
-          <span>{Math.round(anime.duration / 60)}分</span>
+          <span>{formatDuration(activeEpisode.duration)}</span>
           <span>{anime.genres.join(" / ")}</span>
         </div>
-        <p>{anime.synopsis}</p>
-        {anime.creator && (
-          <div className="detail__meta">
-            <span>クリエイター: {anime.creator}</span>
-          </div>
-        )}
+        <p>{activeEpisode.synopsis || anime.synopsis}</p>
         <EngagementPanel
           slug={anime.slug}
-          initialViews={anime.metrics?.views ?? 0}
-          initialLikes={anime.metrics?.likes ?? 0}
+          episodeId={activeEpisode.id}
+          initialViews={views}
+          initialLikes={likes}
         />
+        {otherEpisodes.length > 0 && (
+          <div className="episode-list">
+            <h2 className="episode-list__title">他のエピソード</h2>
+            <div className="episode-list__items">
+              {otherEpisodes.map((episode) => (
+                <Link
+                  key={episode.id}
+                  href={`/watch/${anime.slug}?episode=${episode.id}`}
+                  className="episode-list__item"
+                >
+                  <div className="episode-list__thumb">
+                    <img
+                      src={episode.video.poster ?? anime.thumbnail ?? "/images/logo.png"}
+                      alt={`${episode.title}のサムネイル`}
+                      loading="lazy"
+                    />
+                  </div>
+                  <div className="episode-list__content">
+                    <p className="episode-list__name">{episode.title}</p>
+                    <p className="episode-list__meta">
+                      👁 {episode.metrics?.views?.toLocaleString("ja-JP") ?? "0"} ／ ♥{" "}
+                      {episode.metrics?.likes?.toLocaleString("ja-JP") ?? "0"}
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="detail__actions">
           <Link href="/" className="button button--ghost">
-            作品一覧へ戻る
+            注目エピソードへ戻る
           </Link>
         </div>
       </section>

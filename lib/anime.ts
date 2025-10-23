@@ -13,18 +13,27 @@ export type AnimeMetrics = {
   likes: number;
 };
 
+export type AnimeEpisode = {
+  id: string;
+  title: string;
+  synopsis: string;
+  duration: number;
+  video: AnimeVideo;
+  metrics?: AnimeMetrics;
+};
+
 export type Anime = {
   slug: string;
   title: string;
   synopsis: string;
   thumbnail: string;
-  duration: number;
   year: number;
   rating: string;
   genres: string[];
-  video: AnimeVideo;
   creator?: string;
+  duration?: number;
   metrics?: AnimeMetrics;
+  episodes: AnimeEpisode[];
 };
 
 const DATA_PATH = "/data/anime.json";

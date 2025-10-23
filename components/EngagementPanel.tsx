@@ -6,35 +6,36 @@ const numberFormatter = new Intl.NumberFormat("ja-JP");
 
 type EngagementPanelProps = {
   slug: string;
+  episodeId: string;
   initialViews: number;
   initialLikes: number;
 };
 
-export default function EngagementPanel({ slug, initialViews, initialLikes }: EngagementPanelProps) {
+export default function EngagementPanel({ slug, episodeId, initialViews, initialLikes }: EngagementPanelProps) {
   const [viewDelta, setViewDelta] = useState(0);
   const [likeDelta, setLikeDelta] = useState(0);
   const [liked, setLiked] = useState(false);
 
   useEffect(() => {
-    const viewKey = `xanime_views_${slug}`;
+    const viewKey = `xanime_views_${slug}_${episodeId}`;
     const stored = Number(window.localStorage.getItem(viewKey) ?? "0");
     const next = stored + 1;
     window.localStorage.setItem(viewKey, String(next));
     setViewDelta(next);
-  }, [slug]);
+  }, [episodeId, slug]);
 
   useEffect(() => {
-    const likeFlagKey = `xanime_like_flag_${slug}`;
-    const likeDeltaKey = `xanime_like_delta_${slug}`;
+    const likeFlagKey = `xanime_like_flag_${slug}_${episodeId}`;
+    const likeDeltaKey = `xanime_like_delta_${slug}_${episodeId}`;
     const storedFlag = window.localStorage.getItem(likeFlagKey) === "1";
     const storedDelta = Number(window.localStorage.getItem(likeDeltaKey) ?? "0");
     setLiked(storedFlag);
     setLikeDelta(storedDelta);
-  }, [slug]);
+  }, [episodeId, slug]);
 
   const toggleLike = useCallback(() => {
-    const likeFlagKey = `xanime_like_flag_${slug}`;
-    const likeDeltaKey = `xanime_like_delta_${slug}`;
+    const likeFlagKey = `xanime_like_flag_${slug}_${episodeId}`;
+    const likeDeltaKey = `xanime_like_delta_${slug}_${episodeId}`;
     const nextLiked = !liked;
     let nextDelta = likeDelta;
 
@@ -48,7 +49,7 @@ export default function EngagementPanel({ slug, initialViews, initialLikes }: En
     window.localStorage.setItem(likeDeltaKey, String(nextDelta));
     setLiked(nextLiked);
     setLikeDelta(nextDelta);
-  }, [likeDelta, liked, slug]);
+  }, [episodeId, likeDelta, liked, slug]);
 
   const totalViews = useMemo(() => initialViews + viewDelta, [initialViews, viewDelta]);
   const totalLikes = useMemo(() => initialLikes + likeDelta, [initialLikes, likeDelta]);

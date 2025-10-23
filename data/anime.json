@@ -4,7 +4,6 @@
     "title": "xanime Dreams",
     "synopsis": "舞い散る桜が導く異世界で、記憶を無くした青年が少女と出会い、季節を取り戻す旅に出る。",
     "thumbnail": "/images/thumbnails/1759459342027454046_P2fcuqmi.png",
-    "duration": 1460,
     "year": 2025,
     "rating": "G",
     "genres": [
@@ -12,15 +11,57 @@
       "ドラマ"
     ],
     "creator": "Hanami Kaze",
-    "video": {
-      "type": "mp4",
-      "src": "/videos/sample.mp4",
-      "poster": "/images/thumbnails/1759459342027454046_P2fcuqmi.png"
-    },
     "metrics": {
       "views": 12840,
       "likes": 642
-    }
+    },
+    "episodes": [
+      {
+        "id": "xanime-dreams-ep1",
+        "title": "第1話 桜風の目覚め",
+        "synopsis": "異世界に迷い込んだ青年が桜の精霊と出会い、失われた季節を取り戻す旅へ踏み出す。",
+        "duration": 480,
+        "video": {
+          "type": "mp4",
+          "src": "/videos/sample.mp4",
+          "poster": "/images/thumbnails/1759459342027454046_P2fcuqmi.png"
+        },
+        "metrics": {
+          "views": 12840,
+          "likes": 642
+        }
+      },
+      {
+        "id": "xanime-dreams-ep2",
+        "title": "第2話 花霞の追憶",
+        "synopsis": "青年は過去の記憶を呼び戻す鍵を求め、忘却の森で幼き日の面影と向き合う。",
+        "duration": 510,
+        "video": {
+          "type": "mp4",
+          "src": "/videos/sample.mp4",
+          "poster": "/images/thumbnails/1759459342027454046_P2fcuqmi.png"
+        },
+        "metrics": {
+          "views": 11220,
+          "likes": 588
+        }
+      },
+      {
+        "id": "xanime-dreams-ep3",
+        "title": "第3話 春雷の約束",
+        "synopsis": "桜の街を脅かす闇と対峙し、仲間たちと未来への約束を交わすクライマックス。",
+        "duration": 520,
+        "video": {
+          "type": "mp4",
+          "src": "/videos/sample.mp4",
+          "poster": "/images/thumbnails/1759459342027454046_P2fcuqmi.png"
+        },
+        "metrics": {
+          "views": 9860,
+          "likes": 522
+        }
+      }
+    ]
   },
   {
     "slug": "xanime-onsen-yu",
@@ -35,15 +76,42 @@
       "ロマンス"
     ],
     "creator": "Miyabi Fubuki",
-    "video": {
-      "type": "mp4",
-      "src": "/videos/sakura-onsen.mp4",
-      "poster": "/images/thumbnails/sakura-onsen.jpg"
-    },
     "metrics": {
       "views": 8420,
       "likes": 512
-    }
+    },
+    "episodes": [
+      {
+        "id": "xanime-onsen-yu-ep1",
+        "title": "第1話 湯けむりの告白",
+        "synopsis": "夜の温泉宿で、少女が胸に秘めた想いを湯けむりに紛らせながら語り始める。",
+        "duration": 360,
+        "video": {
+          "type": "mp4",
+          "src": "/videos/sakura-onsen.mp4",
+          "poster": "/images/thumbnails/sakura-onsen.jpg"
+        },
+        "metrics": {
+          "views": 8420,
+          "likes": 512
+        }
+      },
+      {
+        "id": "xanime-onsen-yu-ep2",
+        "title": "第2話 朝霧の約束",
+        "synopsis": "夜明け前の露天風呂で交わした約束が、二人の未来を優しく照らし出す。",
+        "duration": 340,
+        "video": {
+          "type": "mp4",
+          "src": "/videos/sakura-onsen.mp4",
+          "poster": "/images/thumbnails/sakura-onsen.jpg"
+        },
+        "metrics": {
+          "views": 7260,
+          "likes": 438
+        }
+      }
+    ]
   },
   {
     "slug": "sakura-bousou",
@@ -60,14 +128,41 @@
       "パンツ"
     ],
     "creator": "Sakura.D",
-    "video": {
-      "type": "mp4",
-      "src": "/videos/sakura-sm.mp4",
-      "poster": "/images/thumbnails/sm.jpeg"
-    },
     "metrics": {
       "views": 4560,
       "likes": 301
-    }
+    },
+    "episodes": [
+      {
+        "id": "sakura-bousou-ep1",
+        "title": "第1話 禁断の診察室",
+        "synopsis": "強気なナース桜が問題患者の願望に痛烈なお仕置きを与える。",
+        "duration": 420,
+        "video": {
+          "type": "mp4",
+          "src": "/videos/sakura-sm.mp4",
+          "poster": "/images/thumbnails/sm.jpeg"
+        },
+        "metrics": {
+          "views": 4560,
+          "likes": 301
+        }
+      },
+      {
+        "id": "sakura-bousou-ep2",
+        "title": "第2話 ナースの逆襲",
+        "synopsis": "悪ノリする患者に対し、桜がさらなる口撃と仕掛けで反撃する。",
+        "duration": 430,
+        "video": {
+          "type": "mp4",
+          "src": "/videos/sakura-sm.mp4",
+          "poster": "/images/thumbnails/sm.jpeg"
+        },
+        "metrics": {
+          "views": 3880,
+          "likes": 274
+        }
+      }
+    ]
   }
 ]
