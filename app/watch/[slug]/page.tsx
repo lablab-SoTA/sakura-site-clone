@@ -151,7 +151,7 @@ export default async function WatchPage({ params, searchParams }: WatchPageProps
                   <div className="episode-list__content">
                     <p className="episode-list__name">{episode.title}</p>
                     <p className="episode-list__meta">
-                      👁 {episode.metrics?.views?.toLocaleString("ja-JP") ?? "0"} ／ ♥{" "}
+                      ▶ {episode.metrics?.views?.toLocaleString("ja-JP") ?? "0"} ／ ♥{" "}
                       {episode.metrics?.likes?.toLocaleString("ja-JP") ?? "0"}
                     </p>
                   </div>
@@ -162,7 +162,7 @@ export default async function WatchPage({ params, searchParams }: WatchPageProps
         )}
         <div className="detail__actions">
           <Link href="/" className="button button--ghost">
-            注目エピソードへ戻る
+            人気のコンテンツへ戻る
           </Link>
         </div>
       </section>

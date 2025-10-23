@@ -6,10 +6,7 @@
     "thumbnail": "/images/thumbnails/1759459342027454046_P2fcuqmi.png",
     "year": 2025,
     "rating": "G",
-    "genres": [
-      "ファンタジー",
-      "ドラマ"
-    ],
+    "genres": ["ファンタジー", "ドラマ"],
     "creator": "Hanami Kaze",
     "metrics": {
       "views": 12840,
@@ -18,63 +15,49 @@
     "episodes": [
       {
         "id": "xanime-dreams-ep1",
-        "title": "第1話 桜風の目覚め",
-        "synopsis": "異世界に迷い込んだ青年が桜の精霊と出会い、失われた季節を取り戻す旅へ踏み出す。",
-        "duration": 480,
+        "title": "第1話 春霞の出会い",
+        "synopsis": "記憶を失った青年が桜色の異世界で少女と出会い、失われた季節の秘密を探り始める。",
+        "duration": 1460,
         "video": {
           "type": "mp4",
           "src": "/videos/sample.mp4",
           "poster": "/images/thumbnails/1759459342027454046_P2fcuqmi.png"
         },
         "metrics": {
-          "views": 12840,
-          "likes": 642
+          "views": 8240,
+          "likes": 412
         }
       },
       {
         "id": "xanime-dreams-ep2",
-        "title": "第2話 花霞の追憶",
-        "synopsis": "青年は過去の記憶を呼び戻す鍵を求め、忘却の森で幼き日の面影と向き合う。",
-        "duration": 510,
+        "title": "第2話 追憶の花びら",
+        "synopsis": "少女の手がかりを求めて古い社を訪ねる二人。桜吹雪の中で青年は失った記憶の断片を垣間見る。",
+        "duration": 1500,
         "video": {
           "type": "mp4",
           "src": "/videos/sample.mp4",
           "poster": "/images/thumbnails/1759459342027454046_P2fcuqmi.png"
         },
         "metrics": {
-          "views": 11220,
-          "likes": 588
-        }
-      },
-      {
-        "id": "xanime-dreams-ep3",
-        "title": "第3話 春雷の約束",
-        "synopsis": "桜の街を脅かす闇と対峙し、仲間たちと未来への約束を交わすクライマックス。",
-        "duration": 520,
-        "video": {
-          "type": "mp4",
-          "src": "/videos/sample.mp4",
-          "poster": "/images/thumbnails/1759459342027454046_P2fcuqmi.png"
-        },
-        "metrics": {
-          "views": 9860,
-          "likes": 522
+          "views": 4600,
+          "likes": 230
         }
       }
-    ]
+    ],
+    "credits": {
+      "director": "Hanami Kaze",
+      "studio": "Studio Sakura",
+      "cast": ["Kaito Aiba", "Yuri Minami"]
+    }
   },
   {
     "slug": "xanime-onsen-yu",
     "title": "xanime 湯けむり夜話",
     "synopsis": "夜の露天風呂に立ちこめる湯けむりのなか、桜色の髪の少女が秘密の語らいを交わす幻想的なショートムービー。",
     "thumbnail": "/images/thumbnails/sakura-onsen.jpg",
-    "duration": 360,
     "year": 2025,
     "rating": "R18",
-    "genres": [
-      "ドラマ",
-      "ロマンス"
-    ],
+    "genres": ["ドラマ", "ロマンス"],
     "creator": "Miyabi Fubuki",
     "metrics": {
       "views": 8420,
@@ -83,8 +66,8 @@
     "episodes": [
       {
         "id": "xanime-onsen-yu-ep1",
-        "title": "第1話 湯けむりの告白",
-        "synopsis": "夜の温泉宿で、少女が胸に秘めた想いを湯けむりに紛らせながら語り始める。",
+        "title": "前編 湯気の向こう側",
+        "synopsis": "常連客の青年が温泉宿を再訪。夜霧のなかで出迎えた少女との会話が静かな夜を彩る。",
         "duration": 360,
         "video": {
           "type": "mp4",
@@ -92,23 +75,23 @@
           "poster": "/images/thumbnails/sakura-onsen.jpg"
         },
         "metrics": {
-          "views": 8420,
-          "likes": 512
+          "views": 5120,
+          "likes": 310
         }
       },
       {
         "id": "xanime-onsen-yu-ep2",
-        "title": "第2話 朝霧の約束",
-        "synopsis": "夜明け前の露天風呂で交わした約束が、二人の未来を優しく照らし出す。",
-        "duration": 340,
+        "title": "後編 月光の約束",
+        "synopsis": "湯けむりに包まれた月夜。少女が胸の内を明かし、二人は再会の約束を交わす。",
+        "duration": 420,
         "video": {
           "type": "mp4",
           "src": "/videos/sakura-onsen.mp4",
           "poster": "/images/thumbnails/sakura-onsen.jpg"
         },
         "metrics": {
-          "views": 7260,
-          "likes": 438
+          "views": 3300,
+          "likes": 202
         }
       }
     ]
@@ -116,17 +99,11 @@
   {
     "slug": "sakura-bousou",
     "title": "桜大暴走",
-    "synopsis": "パンツを見せてほしいと懇願する患者に看護師の桜が情け容赦ない言葉を浴びせる",
+    "synopsis": "パンツを見せてほしいと懇願する患者に看護師の桜が情け容赦ない言葉を浴びせる。",
     "thumbnail": "/images/thumbnails/sm.jpeg",
-    "duration": 600,
     "year": 2025,
     "rating": "R15",
-    "genres": [
-      "SM",
-      "M",
-      "罵倒",
-      "パンツ"
-    ],
+    "genres": ["ドラマ", "コメディ"],
     "creator": "Sakura.D",
     "metrics": {
       "views": 4560,
@@ -135,32 +112,32 @@
     "episodes": [
       {
         "id": "sakura-bousou-ep1",
-        "title": "第1話 禁断の診察室",
-        "synopsis": "強気なナース桜が問題患者の願望に痛烈なお仕置きを与える。",
-        "duration": 420,
+        "title": "第1夜 罵声カルテ",
+        "synopsis": "深夜勤務のナースステーションに押しかけた患者が、桜の痛烈な一言で一瞬にして黙り込む。",
+        "duration": 600,
         "video": {
           "type": "mp4",
           "src": "/videos/sakura-sm.mp4",
           "poster": "/images/thumbnails/sm.jpeg"
         },
         "metrics": {
-          "views": 4560,
-          "likes": 301
+          "views": 2860,
+          "likes": 180
         }
       },
       {
         "id": "sakura-bousou-ep2",
-        "title": "第2話 ナースの逆襲",
-        "synopsis": "悪ノリする患者に対し、桜がさらなる口撃と仕掛けで反撃する。",
-        "duration": 430,
+        "title": "第2夜 夜勤ブレイクアウト",
+        "synopsis": "桜の毒舌がさらに冴えわたり、同僚たちも巻き込んだ騒動が院内の噂になる。",
+        "duration": 720,
         "video": {
           "type": "mp4",
-          "src": "/videos/sakura-sm.mp4",
+          "src": "/videos/SM.mp4",
           "poster": "/images/thumbnails/sm.jpeg"
         },
         "metrics": {
-          "views": 3880,
-          "likes": 274
+          "views": 1700,
+          "likes": 121
         }
       }
     ]

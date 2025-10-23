@@ -115,6 +115,7 @@ async function main() {
     }
 
     const rating = await ask("年齢区分（例: G, PG12, R18）", { defaultValue: "G", required: true });
+    const creator = await ask("クリエイター名（任意）");
     const durationInput = await ask("上映時間（分単位で入力、例: 24.5）", { required: true });
     const durationMinutes = Number.parseFloat(durationInput);
     if (Number.isNaN(durationMinutes) || durationMinutes <= 0) {
@@ -158,20 +159,42 @@ async function main() {
       .map((item) => item.trim())
       .filter(Boolean);
 
+    const episodeTitle =
+      (await ask("エピソードタイトル（任意）", { defaultValue: `${title} 第1話` })) || `${title} 第1話`;
+    const episodeSynopsis =
+      (await ask("エピソードの概要（未入力の場合は作品あらすじを使用）")) || synopsis;
+    const episodeId = `${slug}-ep1`;
+
     const newEntry = {
       slug,
       title,
       synopsis,
       thumbnail: posterSrc,
-      duration: durationSeconds,
       year,
       rating,
       genres,
-      video: {
-        type: videoType,
-        src: videoSrc,
-        poster: posterSrc,
+      creator: creator || undefined,
+      metrics: {
+        views: 0,
+        likes: 0,
       },
+      episodes: [
+        {
+          id: episodeId,
+          title: episodeTitle,
+          synopsis: episodeSynopsis,
+          duration: durationSeconds,
+          video: {
+            type: videoType,
+            src: videoSrc,
+            poster: posterSrc,
+          },
+          metrics: {
+            views: 0,
+            likes: 0,
+          },
+        },
+      ],
     };
 
     if (director || studio || cast.length > 0) {

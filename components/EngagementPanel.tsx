@@ -58,7 +58,7 @@ export default function EngagementPanel({ slug, episodeId, initialViews, initial
     <div className="detail__engagement">
       <div className="detail__stats" aria-live="polite">
         <span className="detail__stat" aria-label={`視聴回数 ${totalViews} 回`}>
-          👁 {numberFormatter.format(totalViews)}回視聴
+          ▶ {numberFormatter.format(totalViews)}回視聴
         </span>
         <span className="detail__stat" aria-label={`いいね ${totalLikes} 件`}>
           ♥ {numberFormatter.format(totalLikes)}いいね
