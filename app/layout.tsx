@@ -20,10 +20,10 @@ export const metadata: Metadata = {
     description: "xanime（エックスアニメ）は日本で最高のヘンタイアニメをお届けします。",
     images: [
       {
-        url: "/images/og-xanime-centered.svg",
-        width: 1200,
-        height: 630,
-        alt: "xanime - 日本で最高のヘンタイアニメをお届けします",
+        url: "/images/title.jpg",
+        width: 1929,
+        height: 1092,
+        alt: "xanime ロゴ",
       },
     ],
   },
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "xanime｜インディーアニメの配信ポータル",
     description: "xanime（エックスアニメ）は日本で最高のヘンタイアニメをお届けします。",
-    images: ["/images/og-xanime-centered.svg"],
+    images: ["/images/title.jpg"],
   },
 };
 
