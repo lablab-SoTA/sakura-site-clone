@@ -64,6 +64,12 @@ npm run upload   # OpenNext build -> キャッシュ/アセットアップロー
 - OpenNext のビルド成果物は `.open-next/` 以下に生成され、Workers から `wrangler.jsonc` 設定で参照。
 - R2 バケット `sakura-open-next-cache` を事前に作成 (`wrangler r2 bucket create sakura-open-next-cache`)。
 
+## 簡易アップロードツール
+- `npm run add-video` で対話式ウィザードを起動。作品タイトルやスラッグ、ジャンル等を入力すると `data/anime.json` に自動追記する。
+- 動画ファイルやポスターのローカルパスを指定すると `public/videos/` や `public/images/thumbnails/` にコピーし、`video.src` と `thumbnail` を更新。
+- R2 など外部に配置済みの動画を使う場合はコピーをスキップし、直接 URL を入力する。
+- 追加後は通常通り `npm run dev` や `npm run deploy`、`npm run upload` で反映する。
+
 ## 今後の拡張
 - `data/anime.json` を CI/CD で更新し、複数作品へ拡充。
 - R2 に実動画を配置し、`video.src` を署名付き URL に切り替える。
