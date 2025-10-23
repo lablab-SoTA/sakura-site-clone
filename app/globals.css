@@ -70,10 +70,8 @@ a {
   left: 50%;
   transform: translateX(-50%);
   width: min(calc(100% - 2 * var(--site-gutter)), 1320px);
-  backdrop-filter: blur(16px);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.76));
+  background: var(--bg);
   box-shadow: 0 12px 30px rgba(31, 34, 46, 0.08);
-  border-radius: calc(var(--radius-lg) - 8px);
   z-index: 200;
 }
 
@@ -559,11 +557,12 @@ a {
     right: 0;
     transform: none;
     width: 100%;
-    border-radius: 0 0 20px 20px;
     gap: clamp(10px, 4vw, 16px);
     justify-content: flex-start;
     align-items: center;
     padding: clamp(12px, 4vw, 18px) clamp(16px, 6vw, 28px);
+    background: var(--bg);
+    box-shadow: 0 6px 16px rgba(31, 34, 46, 0.08);
   }
 
   .brand {
