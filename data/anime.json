@@ -7,16 +7,19 @@
     "duration": 1460,
     "year": 2025,
     "rating": "G",
-    "genres": ["ファンタジー", "ドラマ"],
+    "genres": [
+      "ファンタジー",
+      "ドラマ"
+    ],
+    "creator": "Hanami Kaze",
     "video": {
       "type": "mp4",
       "src": "/videos/sample.mp4",
       "poster": "/images/thumbnails/1759459342027454046_P2fcuqmi.png"
     },
-    "credits": {
-      "director": "Hanami Kaze",
-      "studio": "Studio xanime",
-      "cast": ["Kaito Aiba", "Yuri Minami"]
+    "metrics": {
+      "views": 12840,
+      "likes": 642
     }
   },
   {
@@ -27,16 +30,44 @@
     "duration": 360,
     "year": 2025,
     "rating": "R18",
-    "genres": ["ドラマ", "ロマンス"],
+    "genres": [
+      "ドラマ",
+      "ロマンス"
+    ],
+    "creator": "Miyabi Fubuki",
     "video": {
       "type": "mp4",
       "src": "/videos/sakura-onsen.mp4",
       "poster": "/images/thumbnails/sakura-onsen.jpg"
     },
-    "credits": {
-      "director": "Miyabi Fubuki",
-      "studio": "Studio xanime",
-      "cast": ["Haruka Sato"]
+    "metrics": {
+      "views": 8420,
+      "likes": 512
+    }
+  },
+  {
+    "slug": "sakura-bousou",
+    "title": "桜大暴走",
+    "synopsis": "パンツを見せてほしいと懇願する患者に看護師の桜が情け容赦ない言葉を浴びせる",
+    "thumbnail": "/images/thumbnails/sm.jpeg",
+    "duration": 600,
+    "year": 2025,
+    "rating": "R15",
+    "genres": [
+      "SM",
+      "M",
+      "罵倒",
+      "パンツ"
+    ],
+    "creator": "Sakura.D",
+    "video": {
+      "type": "mp4",
+      "src": "/videos/sakura-sm.mp4",
+      "poster": "/images/thumbnails/sm.jpeg"
+    },
+    "metrics": {
+      "views": 4560,
+      "likes": 301
     }
   }
 ]

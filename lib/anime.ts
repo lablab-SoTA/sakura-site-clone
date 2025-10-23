@@ -8,6 +8,11 @@ export type AnimeVideo = {
   poster?: string;
 };
 
+export type AnimeMetrics = {
+  views: number;
+  likes: number;
+};
+
 export type Anime = {
   slug: string;
   title: string;
@@ -18,11 +23,8 @@ export type Anime = {
   rating: string;
   genres: string[];
   video: AnimeVideo;
-  credits?: {
-    director?: string;
-    studio?: string;
-    cast?: string[];
-  };
+  creator?: string;
+  metrics?: AnimeMetrics;
 };
 
 const DATA_PATH = "/data/anime.json";

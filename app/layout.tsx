@@ -9,15 +9,33 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "xanime｜インディーアニメの配信ポータル",
-  description: "クリエイターによる個人制作アニメを無料で楽しめる xanime ポータルサイト。",
+  description: "xanime（エックスアニメ）は日本で最高のヘンタイアニメをお届けします。",
+  keywords: ["アニメ", "インディーアニメ", "ヘンタイ", "無料動画", "成人向け"],
+  openGraph: {
+    type: "website",
+    locale: "ja_JP",
+    url: "https://xanime.example.com",
+    siteName: "xanime",
+    title: "xanime｜インディーアニメの配信ポータル",
+    description: "xanime（エックスアニメ）は日本で最高のヘンタイアニメをお届けします。",
+    images: [
+      {
+        url: "/images/og-xanime-centered.svg",
+        width: 1200,
+        height: 630,
+        alt: "xanime - 日本で最高のヘンタイアニメをお届けします",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "xanime｜インディーアニメの配信ポータル",
+    description: "xanime（エックスアニメ）は日本で最高のヘンタイアニメをお届けします。",
+    images: ["/images/og-xanime-centered.svg"],
+  },
 };
 
-const primaryNav = [
-  { href: "/", label: "人気" },
-  { href: "/?tab=trending", label: "急上昇" },
-  { href: "/?tab=new", label: "新着" },
-  { href: "/?tab=library", label: "動画" },
-];
+const primaryNav: Array<{ href: string; label: string }> = [];
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -39,13 +57,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 priority
               />
             </Link>
-            <nav className="layout__nav">
-              {primaryNav.map((item) => (
-                <Link key={item.label} href={item.href} className="layout__nav-item">
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
+            {primaryNav.length > 0 && (
+              <nav className="layout__nav">
+                {primaryNav.map((item) => (
+                  <Link key={item.label} href={item.href} className="layout__nav-item">
+                    {item.label}
+                  </Link>
+                ))}
+              </nav>
+            )}
           </header>
           <main className="layout__main">{children}</main>
           <footer className="layout__footer">

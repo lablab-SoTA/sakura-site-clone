@@ -1,6 +1,9 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 import AgeGateInteractionLock from "@/components/AgeGateInteractionLock";
+import { AGE_VERIFIED_COOKIE_NAME, AGE_VERIFIED_COOKIE_VALUE } from "@/lib/constants";
 
 import { verifyAgeAction } from "./actions";
 
@@ -10,6 +13,10 @@ type AgeGatePageProps = {
 
 export default async function AgeGatePage({ searchParams }: AgeGatePageProps) {
   const params = (await searchParams) ?? {};
+  const cookieStore = await cookies();
+  const alreadyVerified =
+    cookieStore.get(AGE_VERIFIED_COOKIE_NAME)?.value === AGE_VERIFIED_COOKIE_VALUE;
+
   const rawError = params.error;
   const errorParam = Array.isArray(rawError) ? rawError[0] : rawError;
   const hasError = errorParam === "consent_required";
@@ -18,6 +25,10 @@ export default async function AgeGatePage({ searchParams }: AgeGatePageProps) {
   const redirectToParam = Array.isArray(rawRedirect) ? rawRedirect[0] : rawRedirect;
   const redirectValue =
     redirectToParam && redirectToParam.startsWith("/") ? redirectToParam : "/";
+
+  if (alreadyVerified) {
+    redirect(redirectValue);
+  }
 
   return (
     <>

@@ -185,7 +185,7 @@ export default function Player({
         preload="metadata"
         controlsList={showControls ? "nodownload noplaybackrate" : undefined}
         disablePictureInPicture
-        onClick={togglePlayback}
+        onClick={showControls ? undefined : togglePlayback}
         onContextMenu={(event) => event.preventDefault()}
         onLoadedMetadata={() => updateDimensions(videoRef.current)}
       >

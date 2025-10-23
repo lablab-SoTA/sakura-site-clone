@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import EngagementPanel from "@/components/EngagementPanel";
 import Player from "@/components/Player";
 import { fetchAnimeBySlug } from "@/lib/anime";
 
@@ -26,7 +27,22 @@ export async function generateMetadata({ params }: WatchPageProps): Promise<Meta
   return {
     title: `${anime.title} | xanime`,
     description: anime.synopsis,
+    keywords: [...anime.genres, "アニメ", "無料動画", "個人制作"],
     openGraph: {
+      title: `${anime.title} | xanime`,
+      description: anime.synopsis,
+      type: "video.movie",
+      images: anime.thumbnail ? [
+        {
+          url: anime.thumbnail,
+          width: 1200,
+          height: 630,
+          alt: anime.title,
+        }
+      ] : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
       title: `${anime.title} | xanime`,
       description: anime.synopsis,
       images: anime.thumbnail ? [anime.thumbnail] : undefined,
@@ -52,6 +68,7 @@ export default async function WatchPage({ params }: WatchPageProps) {
           poster={playerPoster}
           title={anime.title}
           autoPlay
+          showControls
         />
       </div>
       <section className="detail">
@@ -68,15 +85,16 @@ export default async function WatchPage({ params }: WatchPageProps) {
           <span>{anime.genres.join(" / ")}</span>
         </div>
         <p>{anime.synopsis}</p>
-        {anime.credits && (
+        {anime.creator && (
           <div className="detail__meta">
-            {anime.credits.director && <span>監督: {anime.credits.director}</span>}
-            {anime.credits.studio && <span>制作: {anime.credits.studio}</span>}
-            {anime.credits.cast && anime.credits.cast.length > 0 && (
-              <span>キャスト: {anime.credits.cast.join("、")}</span>
-            )}
+            <span>クリエイター: {anime.creator}</span>
           </div>
         )}
+        <EngagementPanel
+          slug={anime.slug}
+          initialViews={anime.metrics?.views ?? 0}
+          initialLikes={anime.metrics?.likes ?? 0}
+        />
         <div className="detail__actions">
           <Link href="/" className="button button--ghost">
             作品一覧へ戻る
