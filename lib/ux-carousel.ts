@@ -2,6 +2,7 @@ export type CarouselOptions = {
   autoplay?: boolean;
   intervalMs?: number;
   snapThresholdRatio?: number;
+  loop?: boolean;
   onChange?: (index: number) => void;
 };
 
@@ -21,7 +22,10 @@ export function initCarousel(root: HTMLElement, opts: CarouselOptions = {}): Car
   }
 
   const viewport = root.querySelector<HTMLElement>(".ux-carousel__viewport");
-  const slides = Array.from(root.querySelectorAll<HTMLElement>("[data-slide]"));
+  const slideElements = Array.from(root.querySelectorAll<HTMLElement>("[data-slide]"));
+  const slides = slideElements.filter((element) => !element.dataset.slideClone);
+  const loopHead = slideElements.find((element) => element.dataset.slideClone === "head") ?? null;
+  const loopTail = slideElements.find((element) => element.dataset.slideClone === "tail") ?? null;
 
   if (!viewport || slides.length === 0) {
     return null;
@@ -35,6 +39,7 @@ export function initCarousel(root: HTMLElement, opts: CarouselOptions = {}): Car
     autoplay: false,
     intervalMs: 5000,
     snapThresholdRatio: 1.2,
+    loop: false,
     ...opts,
   };
 
@@ -45,6 +50,10 @@ export function initCarousel(root: HTMLElement, opts: CarouselOptions = {}): Car
   let autoplayTimer: number | null = null;
   let scrollTimer: number | null = null;
   let reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let pendingLoop: "head" | "tail" | null = null;
+  let isJumping = false;
+
+  const loopEnabled = Boolean(options.loop && slides.length > 1 && loopHead && loopTail);
 
   root.setAttribute("role", "region");
   root.setAttribute("aria-roledescription", "carousel");
@@ -53,24 +62,65 @@ export function initCarousel(root: HTMLElement, opts: CarouselOptions = {}): Car
   }
   root.setAttribute("aria-live", options.autoplay ? "off" : "polite");
 
-  const goTo = (index: number) => {
+  const defaultBehavior = () => (reducedMotion ? "auto" : "smooth");
+
+  const setScrollPosition = (left: number, behavior: ScrollBehavior) => {
+    if (behavior === "auto") {
+      isJumping = true;
+      viewport.scrollTo({ left, behavior: "auto" });
+      window.requestAnimationFrame(() => {
+        isJumping = false;
+      });
+    } else {
+      viewport.scrollTo({ left, behavior });
+    }
+  };
+
+  const getOffset = (element: HTMLElement) => element.offsetLeft - viewport.offsetLeft;
+
+  const syncToIndex = (index: number, behavior?: ScrollBehavior, notify = true) => {
     current = toIndex(index);
     const target = slides[current];
-    const offset = target.offsetLeft - viewport.offsetLeft;
-    viewport.scrollTo({
-      left: offset,
-      behavior: reducedMotion ? "auto" : "smooth",
-    });
-    options.onChange?.(current);
+    if (!target) {
+      return;
+    }
+    const offset = getOffset(target);
+    setScrollPosition(offset, behavior ?? defaultBehavior());
+    if (notify) {
+      options.onChange?.(current);
+    }
   };
 
-  const next = () => {
-    goTo(current + 1);
+  const goTo = (index: number, behavior?: ScrollBehavior) => {
+    pendingLoop = null;
+    syncToIndex(index, behavior);
   };
 
-  const prev = () => {
-    goTo(current - 1);
+  const step = (direction: 1 | -1) => {
+    const behavior = defaultBehavior();
+    if (!loopEnabled) {
+      syncToIndex(current + direction, behavior);
+      return;
+    }
+    if (direction === 1 && current >= slides.length - 1) {
+      current = 0;
+      options.onChange?.(current);
+      pendingLoop = "tail";
+      setScrollPosition(getOffset(loopTail as HTMLElement), behavior);
+      return;
+    }
+    if (direction === -1 && current <= 0) {
+      current = slides.length - 1;
+      options.onChange?.(current);
+      pendingLoop = "head";
+      setScrollPosition(getOffset(loopHead as HTMLElement), behavior);
+      return;
+    }
+    syncToIndex(current + direction, behavior);
   };
+
+  const next = () => step(1);
+  const prev = () => step(-1);
 
   const onKey = (event: KeyboardEvent) => {
     const { key } = event;
@@ -119,13 +169,80 @@ export function initCarousel(root: HTMLElement, opts: CarouselOptions = {}): Car
     viewport.scrollLeft += delta;
   };
 
+  const maybeHandleLoop = () => {
+    if (!loopEnabled || !loopHead || !loopTail) {
+      return false;
+    }
+
+    const scrollLeft = viewport.scrollLeft;
+    const headOffset = getOffset(loopHead);
+    const tailOffset = getOffset(loopTail);
+    const firstOffset = getOffset(slides[0]);
+    const lastOffset = getOffset(slides[slides.length - 1]);
+    const near = (value: number, target: number) => Math.abs(value - target) <= 2;
+
+    if (pendingLoop === "tail" && near(scrollLeft, tailOffset)) {
+      pendingLoop = null;
+      syncToIndex(0, "auto", false);
+      return true;
+    }
+
+    if (pendingLoop === "head" && near(scrollLeft, headOffset)) {
+      pendingLoop = null;
+      syncToIndex(slides.length - 1, "auto", false);
+      return true;
+    }
+
+    if (!pendingLoop) {
+      if (scrollLeft <= headOffset + 2 && scrollLeft < firstOffset) {
+        current = slides.length - 1;
+        options.onChange?.(current);
+        syncToIndex(current, "auto", false);
+        return true;
+      }
+      if (scrollLeft >= tailOffset - 2 && scrollLeft > lastOffset) {
+        current = 0;
+        options.onChange?.(current);
+        syncToIndex(current, "auto", false);
+        return true;
+      }
+    }
+
+    return false;
+  };
+
+  const findNearestIndex = () => {
+    let nearest = current;
+    let smallestDistance = Number.POSITIVE_INFINITY;
+    const viewportCenter = viewport.scrollLeft + viewport.clientWidth / 2;
+    slides.forEach((slide, index) => {
+      const slideCenter = getOffset(slide) + slide.offsetWidth / 2;
+      const distance = Math.abs(slideCenter - viewportCenter);
+      if (distance < smallestDistance) {
+        smallestDistance = distance;
+        nearest = index;
+      }
+    });
+    return nearest;
+  };
+
   const onScroll = () => {
+    if (isJumping) {
+      if (scrollTimer) {
+        window.clearTimeout(scrollTimer);
+        scrollTimer = null;
+      }
+      return;
+    }
     if (scrollTimer) {
       window.clearTimeout(scrollTimer);
     }
     scrollTimer = window.setTimeout(() => {
-      const width = viewport.clientWidth || 1;
-      const index = toIndex(Math.round(viewport.scrollLeft / width));
+      scrollTimer = null;
+      if (maybeHandleLoop()) {
+        return;
+      }
+      const index = findNearestIndex();
       if (index !== current) {
         current = index;
         options.onChange?.(current);
@@ -139,6 +256,10 @@ export function initCarousel(root: HTMLElement, opts: CarouselOptions = {}): Car
     }
     stopAutoplay();
     autoplayTimer = window.setInterval(() => {
+      if (loopEnabled) {
+        next();
+        return;
+      }
       const atLast = current >= slides.length - 1;
       goTo(atLast ? 0 : current + 1);
     }, options.intervalMs);
@@ -190,10 +311,15 @@ export function initCarousel(root: HTMLElement, opts: CarouselOptions = {}): Car
   motionMedia.addEventListener?.("change", handleMotionChange);
 
   startAutoplay();
+  if (loopEnabled) {
+    window.requestAnimationFrame(() => {
+      syncToIndex(current, "auto", false);
+    });
+  }
   options.onChange?.(current);
 
   const controller: CarouselController = {
-    goTo,
+    goTo: (index: number) => goTo(index),
     next,
     prev,
     destroy,
