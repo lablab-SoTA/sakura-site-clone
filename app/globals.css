@@ -9,6 +9,18 @@
   --border: rgba(28, 31, 44, 0.12);
   --radius-lg: 24px;
   --site-gutter: clamp(28px, 5vw, 88px);
+  --bp-sm: 480px;
+  --bp-md: 768px;
+  --bp-lg: 1024px;
+  --bp-xl: 1280px;
+  --ease-standard: cubic-bezier(0.2, 0, 0.2, 1);
+  --dur-fast: 150ms;
+  --dur-normal: 200ms;
+  --dur-slow: 300ms;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
   font-family: "Noto Sans JP", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
@@ -32,6 +44,12 @@ body {
   color: var(--fg);
   min-height: 100vh;
   overflow-x: hidden;
+}
+
+@supports (height: 100dvh) {
+  .u-dvh {
+    min-height: 100dvh;
+  }
 }
 
 body.age-gate-active .layout__header,
@@ -189,26 +207,26 @@ a {
 
 .hero-carousel__viewport {
   position: relative;
-  overflow: hidden;
   border-radius: var(--radius-lg);
   background: linear-gradient(160deg, rgba(255, 255, 255, 0.62), rgba(255, 168, 210, 0.12));
   border: 1px solid rgba(255, 120, 183, 0.18);
   box-shadow: 0 32px 64px rgba(31, 34, 46, 0.16);
   touch-action: pan-y;
-  overscroll-behavior-x: contain;
 }
 
 .hero-carousel__track {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: 100%;
-  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-  will-change: transform;
+  grid-auto-columns: minmax(100%, 1fr);
+  gap: 0;
 }
 
 .hero-carousel__slide {
   opacity: calc(0.55 + 0.45 * var(--hero-slide-active, 0));
   transition: opacity 0.4s ease;
+  touch-action: pan-y;
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
 }
 
 .hero-carousel__dots {
@@ -234,6 +252,71 @@ a {
   background: var(--accent);
   box-shadow: 0 10px 20px rgba(255, 120, 183, 0.35);
   transform: scale(1.12);
+}
+
+[data-carousel] {
+  position: relative;
+}
+
+.ux-carousel__viewport {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(100%, 1fr);
+  gap: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: none;
+}
+
+.ux-carousel__viewport::-webkit-scrollbar {
+  display: none;
+}
+
+[data-slide] {
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+}
+
+.ux-media-cover {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+@media (max-width: 480px) {
+  .ux-media-cover {
+    aspect-ratio: 9 / 16;
+  }
+}
+
+.ux-carousel__btn {
+  position: absolute;
+  inset-block: 50%;
+  transform: translateY(-50%);
+  inline-size: 2.5rem;
+  block-size: 2.5rem;
+  display: grid;
+  place-items: center;
+  border-radius: 9999px;
+  background: color-mix(in oklab, Canvas 70%, transparent);
+  transition: background var(--dur-fast) var(--ease-standard);
+}
+
+.ux-carousel__btn:hover {
+  background: color-mix(in oklab, Canvas 85%, transparent);
+}
+
+.ux-carousel__btn--prev {
+  inset-inline-start: var(--space-3);
+}
+
+.ux-carousel__btn--next {
+  inset-inline-end: var(--space-3);
 }
 
 .episode-hero {
@@ -540,6 +623,25 @@ a {
   font-size: 0.78rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
+}
+
+.ux-animate {
+  transition-timing-function: var(--ease-standard);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ux-carousel__viewport {
+    scroll-behavior: auto;
+  }
+
+  .ux-animate {
+    transition-duration: 0ms !important;
+    animation: none !important;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 .hero {

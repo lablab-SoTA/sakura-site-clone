@@ -1,19 +1,11 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type CSSProperties,
-  type KeyboardEvent,
-  type PointerEvent as ReactPointerEvent,
-} from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
 import type { Anime, AnimeEpisode } from "@/lib/anime";
+import { initCarousel, type CarouselController } from "@/lib/ux-carousel";
 import { XANIME_THUMB_PLACEHOLDER } from "@/lib/placeholders";
 
 type HeroSlide = {
@@ -25,160 +17,54 @@ type HeroCarouselProps = {
   slides: HeroSlide[];
 };
 
-const SWIPE_THRESHOLD = 32;
-
 export default function HeroCarousel({ slides }: HeroCarouselProps) {
   const slideCount = slides.length;
   const [activeIndex, setActiveIndex] = useState(0);
-  const [dragOffsetPercent, setDragOffsetPercent] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const viewportRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLElement | null>(null);
+  const controllerRef = useRef<CarouselController | null>(null);
 
   useEffect(() => {
-    setActiveIndex(0);
-    setDragOffsetPercent(0);
-    setIsDragging(false);
+    const root = rootRef.current;
+    if (!root) {
+      return;
+    }
+    const controller = initCarousel(root, {
+      onChange: (index) => setActiveIndex(index),
+    });
+    if (!controller) {
+      setActiveIndex(0);
+      controllerRef.current = null;
+      return;
+    }
+    controllerRef.current = controller;
+    setActiveIndex(controller.index);
+
+    return () => {
+      controller.destroy();
+      controllerRef.current = null;
+    };
   }, [slideCount]);
 
-  const clampIndex = useCallback(
-    (index: number) => {
-      if (slideCount === 0) return 0;
-      const result = ((index % slideCount) + slideCount) % slideCount;
-      return result;
-    },
-    [slideCount],
-  );
-
-  const goTo = useCallback(
-    (index: number) => {
-      setActiveIndex(clampIndex(index));
-    },
-    [clampIndex],
-  );
-
-  const goNext = useCallback(() => {
-    goTo(activeIndex + 1);
-  }, [activeIndex, goTo]);
-
-  const goPrev = useCallback(() => {
-    goTo(activeIndex - 1);
-  }, [activeIndex, goTo]);
-
-  const pointerStartXRef = useRef<number | null>(null);
-  const pointerIdRef = useRef<number | null>(null);
-
-  const handlePointerDown = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
-    if (event.pointerType === "mouse" && event.button !== 0) {
-      return;
-    }
-    pointerIdRef.current = event.pointerId;
-    pointerStartXRef.current = event.clientX;
-    setIsDragging(true);
-    setDragOffsetPercent(0);
-    event.currentTarget.setPointerCapture(event.pointerId);
+  const handleDotClick = useCallback((index: number) => {
+    controllerRef.current?.goTo(index);
   }, []);
-
-  const handlePointerMove = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
-    if (pointerIdRef.current !== event.pointerId) {
-      return;
-    }
-    const startX = pointerStartXRef.current;
-    if (startX == null) {
-      return;
-    }
-    const viewportWidth = viewportRef.current?.offsetWidth ?? 0;
-    if (viewportWidth <= 0) {
-      return;
-    }
-    const delta = event.clientX - startX;
-    const offsetPercent = (delta / viewportWidth) * 100;
-    const clampedOffset = Math.max(-100, Math.min(100, offsetPercent));
-    setDragOffsetPercent(clampedOffset);
-  }, []);
-
-  const handlePointerUp = useCallback(
-    (event: ReactPointerEvent<HTMLDivElement>) => {
-      if (pointerIdRef.current !== event.pointerId) {
-        return;
-      }
-      const startX = pointerStartXRef.current;
-      pointerIdRef.current = null;
-      pointerStartXRef.current = null;
-      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-        event.currentTarget.releasePointerCapture(event.pointerId);
-      }
-      setIsDragging(false);
-      setDragOffsetPercent(0);
-
-      if (startX == null) {
-        return;
-      }
-
-      const delta = event.clientX - startX;
-      if (delta <= -SWIPE_THRESHOLD) {
-        goNext();
-      } else if (delta >= SWIPE_THRESHOLD) {
-        goPrev();
-      }
-    },
-    [goNext, goPrev],
-  );
-
-  const handlePointerCancel = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
-    if (pointerIdRef.current === event.pointerId) {
-      pointerIdRef.current = null;
-      pointerStartXRef.current = null;
-      setIsDragging(false);
-      setDragOffsetPercent(0);
-      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-        event.currentTarget.releasePointerCapture(event.pointerId);
-      }
-    }
-  }, []);
-
-  const handleKeyDown = useCallback(
-    (event: KeyboardEvent<HTMLDivElement>) => {
-      if (event.key === "ArrowRight") {
-        event.preventDefault();
-        goNext();
-      } else if (event.key === "ArrowLeft") {
-        event.preventDefault();
-        goPrev();
-      }
-    },
-    [goNext, goPrev],
-  );
-
-  const trackStyle = useMemo<CSSProperties>(() => {
-    const style: CSSProperties = {
-      transform: `translate3d(calc(-${activeIndex * 100}% + ${dragOffsetPercent}%), 0, 0)`,
-    };
-    if (isDragging) {
-      style.transition = "none";
-    }
-    return style;
-  }, [activeIndex, dragOffsetPercent, isDragging]);
 
   if (slideCount === 0) {
     return null;
   }
 
   return (
-    <section className="hero-carousel" aria-label="人気のコンテンツ">
-      <div
-        className="hero-carousel__viewport"
-        ref={viewportRef}
-        role="group"
-        aria-roledescription="スライダー"
-        aria-label="人気のコンテンツ"
-        tabIndex={0}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerCancel}
-        onKeyDown={handleKeyDown}
-      >
-        <div className="hero-carousel__track" style={trackStyle}>
+    <section
+      ref={rootRef}
+      className="hero-carousel"
+      data-carousel="hero"
+      role="region"
+      aria-roledescription="carousel"
+      aria-label="人気のコンテンツ"
+      aria-live="polite"
+    >
+      <div className="hero-carousel__viewport ux-carousel__viewport" tabIndex={0} aria-label="人気のコンテンツ">
+        <div className="hero-carousel__track">
           {slides.map(({ anime, episode }, index) => {
             const posterSrc =
               episode.video.poster || anime.thumbnail || XANIME_THUMB_PLACEHOLDER;
@@ -189,6 +75,7 @@ export default function HeroCarousel({ slides }: HeroCarouselProps) {
                 key={`${anime.slug}-${episode.id}-hero`}
                 href={`/watch/${anime.slug}?episode=${episode.id}`}
                 className="episode-hero hero-carousel__slide"
+                data-slide
                 style={{
                   "--hero-slide-active": isActive ? "1" : "0",
                   pointerEvents: isActive ? "auto" : "none",
@@ -235,7 +122,7 @@ export default function HeroCarousel({ slides }: HeroCarouselProps) {
               aria-pressed={isActive}
               data-active={isActive ? "true" : "false"}
               aria-controls={`hero-slide-${index}`}
-              onClick={() => goTo(index)}
+              onClick={() => handleDotClick(index)}
             />
           );
         })}
