@@ -76,7 +76,11 @@ export function initCarousel(root: HTMLElement, opts: CarouselOptions = {}): Car
     }
   };
 
-  const getOffset = (element: HTMLElement) => element.offsetLeft - viewport.offsetLeft;
+  const getOffset = (element: HTMLElement) => {
+    const raw = element.offsetLeft - viewport.offsetLeft;
+    const centerOffset = (viewport.clientWidth - element.offsetWidth) / 2;
+    return raw - centerOffset;
+  };
 
   const syncToIndex = (index: number, behavior?: ScrollBehavior, notify = true) => {
     current = toIndex(index);
@@ -179,7 +183,7 @@ export function initCarousel(root: HTMLElement, opts: CarouselOptions = {}): Car
     const tailOffset = getOffset(loopTail);
     const firstOffset = getOffset(slides[0]);
     const lastOffset = getOffset(slides[slides.length - 1]);
-    const near = (value: number, target: number) => Math.abs(value - target) <= 2;
+    const near = (value: number, target: number) => Math.abs(value - target) <= 8;
 
     if (pendingLoop === "tail" && near(scrollLeft, tailOffset)) {
       pendingLoop = null;
@@ -194,13 +198,13 @@ export function initCarousel(root: HTMLElement, opts: CarouselOptions = {}): Car
     }
 
     if (!pendingLoop) {
-      if (scrollLeft <= headOffset + 2 && scrollLeft < firstOffset) {
+      if (scrollLeft <= headOffset + 8 && scrollLeft < firstOffset) {
         current = slides.length - 1;
         options.onChange?.(current);
         syncToIndex(current, "auto", false);
         return true;
       }
-      if (scrollLeft >= tailOffset - 2 && scrollLeft > lastOffset) {
+      if (scrollLeft >= tailOffset - 8 && scrollLeft > lastOffset) {
         current = 0;
         options.onChange?.(current);
         syncToIndex(current, "auto", false);
@@ -311,11 +315,6 @@ export function initCarousel(root: HTMLElement, opts: CarouselOptions = {}): Car
   motionMedia.addEventListener?.("change", handleMotionChange);
 
   startAutoplay();
-  if (loopEnabled) {
-    window.requestAnimationFrame(() => {
-      syncToIndex(current, "auto", false);
-    });
-  }
   options.onChange?.(current);
 
   const controller: CarouselController = {
@@ -329,6 +328,12 @@ export function initCarousel(root: HTMLElement, opts: CarouselOptions = {}): Car
   };
 
   root[CAROUSEL_SYMBOL] = controller;
+
+  window.requestAnimationFrame(() => {
+    if (root[CAROUSEL_SYMBOL] === controller && root.isConnected) {
+      syncToIndex(current, "auto", false);
+    }
+  });
 
   return controller;
 }
