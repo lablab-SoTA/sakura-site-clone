@@ -114,23 +114,54 @@ a {
 }
 
 .layout__header {
+  position: fixed;
+  inset-block-start: var(--safe-top);
+  inset-inline: 0;
+  padding-block: clamp(14px, 3vw, 26px);
+  padding-inline: max(clamp(18px, 5vw, 34px), var(--safe-left))
+    max(clamp(18px, 5vw, 34px), var(--safe-right));
+  border-bottom: 1px solid var(--border);
+  background: #fff;
+  box-shadow: 0 12px 30px rgba(31, 34, 46, 0.08);
+  transition:
+    padding var(--dur-slow) var(--ease-standard),
+    background var(--dur-slow) var(--ease-standard),
+    box-shadow var(--dur-slow) var(--ease-standard),
+    border-color var(--dur-slow) var(--ease-standard);
+  z-index: 200;
+}
+
+.layout__header-inner {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 16px clamp(24px, 4vw, 48px);
-  padding-block: clamp(10px, 2vw, 22px);
-  padding-inline: max(clamp(18px, 4vw, 32px), var(--safe-left)) max(clamp(18px, 4vw, 32px), var(--safe-right));
-  border-bottom: 1px solid var(--border);
-  position: fixed;
-  inset-block-start: calc(var(--safe-top) + clamp(8px, 2vw, 20px));
-  inset-inline: 0;
-  margin-inline: auto;
+  gap: clamp(16px, 4vw, 48px);
   width: min(100%, 1320px);
-  max-width: min(1320px, calc(100% - var(--safe-left) - var(--safe-right)));
-  background: var(--bg);
-  box-shadow: 0 12px 30px rgba(31, 34, 46, 0.08);
-  z-index: 200;
+  margin: 0 auto;
+  transition:
+    width var(--dur-slow) var(--ease-standard),
+    padding var(--dur-slow) var(--ease-standard),
+    border-radius var(--dur-slow) var(--ease-standard),
+    background var(--dur-slow) var(--ease-standard),
+    box-shadow var(--dur-slow) var(--ease-standard),
+    gap var(--dur-slow) var(--ease-standard);
+}
+
+.layout__header--compact {
+  padding-block: clamp(6px, 2vw, 14px);
+  background: transparent;
+  border-bottom-color: transparent;
+  box-shadow: none;
+}
+
+.layout__header--compact .layout__header-inner {
+  width: max-content;
+  padding: 6px 18px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 16px 40px rgba(31, 34, 46, 0.18);
+  gap: clamp(12px, 3vw, 24px);
 }
 
 .brand {
@@ -138,12 +169,22 @@ a {
   align-items: center;
   justify-content: center;
   padding-inline: clamp(4px, 1vw, 12px);
+  transition: padding var(--dur-slow) var(--ease-standard);
 }
 
 .brand__logo {
   display: block;
   height: clamp(22px, 5.5vw, 42px);
   width: auto;
+  transition: height var(--dur-slow) var(--ease-standard);
+}
+
+.layout__header--compact .brand {
+  padding-inline: clamp(2px, 0.6vw, 8px);
+}
+
+.layout__header--compact .brand__logo {
+  height: clamp(18px, 4.6vw, 32px);
 }
 
 .layout__nav {
@@ -158,6 +199,11 @@ a {
   align-items: center;
   color: var(--muted);
   transition: color 0.2s ease;
+}
+
+.layout__header--compact .layout__nav {
+  gap: clamp(10px, 3vw, 32px);
+  font-size: 0.9rem;
 }
 
 .layout__nav-item {
@@ -808,19 +854,22 @@ a {
   }
 
   .layout__header {
-    inset-block-start: calc(var(--safe-top) + clamp(4px, 3vw, 12px));
-    inset-inline: 0;
-    margin-inline: 0; /* 変更: auto から 0 に */
+    margin-inline: 0;
     width: 100%;
-    max-width: 100%; /* 変更: calc を削除して 100% に */
-    gap: clamp(10px, 4vw, 16px);
-    justify-content: flex-start;
-    align-items: center;
-    padding-block: clamp(12px, 4vw, 16px);
-    padding-inline: max(clamp(12px, 5vw, 24px), var(--safe-left))
-      max(clamp(12px, 5vw, 24px), var(--safe-right));
-    background: var(--bg);
-    box-shadow: 0 6px 16px rgba(31, 34, 46, 0.08);
+    max-width: 100%;
+    padding-block: clamp(12px, 4vw, 18px);
+    padding-inline: max(clamp(16px, 6vw, 24px), var(--safe-left))
+      max(clamp(16px, 6vw, 24px), var(--safe-right));
+  }
+
+  .layout__header-inner {
+    width: 100%;
+  }
+
+  .layout__header--compact .layout__header-inner {
+    width: max-content;
+    max-width: 100%;
+    padding: 8px 16px;
   }
 
   .layout__main {
@@ -835,15 +884,6 @@ a {
   .page-lede {
     font-size: 0.82rem;
     line-height: 1.6;
-  }
-
-  .brand {
-    padding-inline: 8px;
-    margin-right: auto;
-  }
-
-  .brand__logo {
-    height: clamp(22px, 5.6vw, 28px);
   }
 
   .layout__nav {

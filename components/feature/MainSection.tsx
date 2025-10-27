@@ -16,14 +16,43 @@ type Highlight = {
 type MainSectionProps = {
   heroSlides: Highlight[];
   featuredEpisodes: Highlight[];
+  contentEpisodes: Highlight[];
 };
 
-export default function MainSection({ heroSlides, featuredEpisodes }: MainSectionProps) {
-  if (heroSlides.length === 0 && featuredEpisodes.length === 0) {
+export default function MainSection({ heroSlides, featuredEpisodes, contentEpisodes }: MainSectionProps) {
+  if (heroSlides.length === 0 && featuredEpisodes.length === 0 && contentEpisodes.length === 0) {
     return null;
   }
 
   const railEpisodes = featuredEpisodes.length > 0 ? featuredEpisodes : heroSlides;
+  const renderEpisodeCards = (items: Highlight[], keySuffix: string) =>
+    items.map(({ anime, episode }) => {
+      const posterSrc = episode.video.poster || anime.thumbnail || XANIME_THUMB_PLACEHOLDER;
+      const views = episode.metrics?.views ?? 0;
+      return (
+        <Link
+          key={`${anime.slug}-${episode.id}-${keySuffix}`}
+          href={`/watch/${anime.slug}?episode=${episode.id}`}
+          className={styles.episodeCard}
+          aria-label={`${anime.title} ${episode.title} を再生する`}
+        >
+          <div className={styles.thumb}>
+            <Image
+              src={posterSrc}
+              alt={`${episode.title}のサムネイル`}
+              fill
+              className={styles.thumbImage}
+              sizes="(max-width: 600px) 180px, 240px"
+            />
+          </div>
+          <div className={styles.cardBody}>
+            <p className={styles.series}>{anime.title}</p>
+            <p className={styles.episodeTitle}>{episode.title}</p>
+            <p className={styles.plays}>▶ {formatNumberJP(views)}</p>
+          </div>
+        </Link>
+      );
+    });
 
   return (
     <section className={styles.root}>
@@ -42,33 +71,21 @@ export default function MainSection({ heroSlides, featuredEpisodes }: MainSectio
             <p className={styles.sectionLead}>再生回数の多い人気エピソードをピックアップしました。</p>
           </header>
           <div className={styles.episodeRail}>
-            {railEpisodes.map(({ anime, episode }) => {
-              const posterSrc = episode.video.poster || anime.thumbnail || XANIME_THUMB_PLACEHOLDER;
-              const views = episode.metrics?.views ?? 0;
-              return (
-                <Link
-                  key={`${anime.slug}-${episode.id}-rail`}
-                  href={`/watch/${anime.slug}?episode=${episode.id}`}
-                  className={styles.episodeCard}
-                  aria-label={`${anime.title} ${episode.title} を再生する`}
-                >
-                  <div className={styles.thumb}>
-                    <Image
-                      src={posterSrc}
-                      alt={`${episode.title}のサムネイル`}
-                      fill
-                      className={styles.thumbImage}
-                      sizes="(max-width: 600px) 180px, 240px"
-                    />
-                  </div>
-                  <div className={styles.cardBody}>
-                    <p className={styles.series}>{anime.title}</p>
-                    <p className={styles.episodeTitle}>{episode.title}</p>
-                    <p className={styles.plays}>▶ {formatNumberJP(views)}</p>
-                  </div>
-                </Link>
-              );
-            })}
+            {renderEpisodeCards(railEpisodes, "rail")}
+          </div>
+        </section>
+      )}
+
+      {contentEpisodes.length > 0 && (
+        <section className={styles.episodeSection} aria-labelledby="all-content-heading">
+          <header className={styles.sectionHeader}>
+            <h2 id="all-content-heading" className={styles.sectionTitle}>
+              コンテンツ
+            </h2>
+            <p className={styles.sectionLead}>公開中のすべてのコンテンツを一覧でご覧いただけます。</p>
+          </header>
+          <div className={styles.episodeRail}>
+            {renderEpisodeCards(contentEpisodes, "content")}
           </div>
         </section>
       )}

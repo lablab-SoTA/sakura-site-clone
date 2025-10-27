@@ -127,18 +127,14 @@ export default function HeroCarousel({ slides }: Readonly<HeroCarouselProps>) {
                           <span>{formatDurationMinutes(item.episode.duration)}</span>
                         </p>
 
-                        <div className={styles.infoPanel}>
-                          <p className={styles.desc}>{item.episode.synopsis}</p>
-
-                          <Link
-                            href={`/watch/${item.anime.slug}?episode=${item.episode.id}`}
-                            className={styles.cta}
-                            aria-label={`${item.anime.title} ${item.episode.title} を再生する`}
-                            tabIndex={isActive ? 0 : -1}
-                          >
-                            再生する
-                          </Link>
-                        </div>
+                        <Link
+                          href={`/watch/${item.anime.slug}?episode=${item.episode.id}`}
+                          className={styles.cta}
+                          aria-label={`${item.anime.title} ${item.episode.title} を再生する`}
+                          tabIndex={isActive ? 0 : -1}
+                        >
+                          再生する
+                        </Link>
                       </div>
                     </div>
                   </div>

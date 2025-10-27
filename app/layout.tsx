@@ -1,9 +1,8 @@
 import type { Metadata, Viewport } from "next";
-import Image from "next/image";
-import Link from "next/link";
 import { Suspense } from "react";
 
 import AgeGateQueryReset from "@/components/AgeGateQueryReset";
+import Header from "@/components/Header";
 
 import "./globals.css";
 
@@ -55,28 +54,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <AgeGateQueryReset />
         </Suspense>
         <div className="layout">
-          <header className="layout__header">
-            <Link href="/" className="brand" aria-label="xanime ホーム">
-              <Image
-                src="/images/logo2.svg"
-                alt="xanime"
-                width={320}
-                height={80}
-                className="brand__logo"
-                sizes="(max-width: 720px) 160px, 220px"
-                priority
-              />
-            </Link>
-            {primaryNav.length > 0 && (
-              <nav className="layout__nav">
-                {primaryNav.map((item) => (
-                  <Link key={item.label} href={item.href} className="layout__nav-item">
-                    {item.label}
-                  </Link>
-                ))}
-              </nav>
-            )}
-          </header>
+          <Header primaryNav={primaryNav} />
           <main className="layout__main">{children}</main>
           <footer className="layout__footer">
             <p>© {new Date().getFullYear()} xanime Studio. All rights reserved.</p>

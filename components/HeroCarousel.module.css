@@ -150,6 +150,52 @@
   }
 }
 
+/* 変更: モバイルでのbadge位置調整 - innerの右上に、幅は文字に合わせる */
+@media (max-width: 600px) {
+  .badge {
+    inset-block-start: 8px;
+    inset-inline-start: auto;
+    inset-inline-end: 8px;
+    padding: 6px 12px; /* 変更: paddingを小さくして幅を文字に合わせる */
+    font-size: clamp(10px, 2.5vw, 12px); /* 変更: フォントサイズを小さく */
+  }
+}
+
+/* 位置のみ微調整（パディング等は変更しない） */
+/* PCなど */
+.badge {
+  inset-block-start: 10px; /* 18px → 10px にして上へ */
+  inset-inline-start: 8px; /* 14px → 8px にして左へ */
+}
+
+/* モバイル */
+@media (max-width: 600px) {
+  .badge {
+    inset-block-start: 4px;  /* さらに上へ */
+    inset-inline-start: 6px; /* さらに左へ */
+    inset-inline-end: auto;  /* 念のため右基準を無効化 */
+  }
+}
+
+/* 白枠を小さく＋左上へ寄せる（PC含む） */
+.badge {
+  padding: 6px 10px;                 /* 白枠の余白を少し縮小 */
+  font-size: clamp(12px, 1.6vw, 14px);/* 文字もわずかに縮小 */
+  inset-block-start: 8px;             /* 上へ */
+  inset-inline-start: 8px;            /* 左へ */
+}
+
+/* モバイルではさらにコンパクト＋左上へ */
+@media (max-width: 600px) {
+  .badge {
+    padding: 3px 6px;                        /* さらに小さく */
+    font-size: clamp(9px, 2.4vw, 11px);      /* さらに小さく */
+    inset-block-start: 4px;                  /* もっと上へ */
+    inset-inline-start: 6px;                 /* もっと左へ */
+    inset-inline-end: auto;                  /* 右基準を無効化 */
+  }
+}
+
 .content {
   position: absolute;
   inset-inline: clamp(28px, 6vw, 60px);
@@ -164,12 +210,18 @@
 
 @media (max-width: 600px) {
   .content {
-    inset-inline: clamp(14px, 6vw, 32px);
-    inset-block-end: clamp(12px, 9vw, 28px);
-    gap: clamp(12px, 4vw, 20px);
-    max-inline-size: 96%;
-    align-items: stretch;
-    text-align: center;
+    inset-block-start: auto;
+    inset-block-end: clamp(4px, 2vw, 8px); /* 変更: 値をさらに小さくしてギリギリ下に配置 */
+    inset-inline-end: clamp(8px, 2vw, 16px);
+    inset-inline-start: auto;
+    gap: 6px;
+    max-inline-size: none;
+    width: auto;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
   }
 }
 
@@ -183,8 +235,9 @@
 
 @media (max-width: 600px) {
   .title {
-    font-size: clamp(34px, 9vw, 48px);
-    letter-spacing: 0.08em;
+    font-size: clamp(16px, 4vw, 20px);
+    letter-spacing: 0.04em;
+    margin: 0;
   }
 }
 
@@ -200,10 +253,11 @@
 
 @media (max-width: 600px) {
   .meta {
-    gap: clamp(10px, 4vw, 16px);
-    font-size: clamp(15px, 4.6vw, 18px);
-    flex-wrap: wrap;
-    justify-content: center;
+    display: flex; /* 変更: 表示する */
+    gap: 6px; /* 変更: gapを小さく */
+    font-size: clamp(10px, 2.5vw, 12px); /* 変更: フォントサイズを小さく */
+    margin: 0; /* 追加 */
+    flex-wrap: nowrap; /* 追加 */
   }
 }
 
@@ -221,13 +275,7 @@
 
 @media (max-width: 600px) {
   .infoPanel {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: clamp(14px, 5vw, 22px);
-    padding: clamp(20px, 7vw, 30px) clamp(18px, 8vw, 36px);
-    border-radius: 24px;
-    max-inline-size: 92%;
+    display: none;
   }
 }
 
@@ -267,9 +315,11 @@
 
 @media (max-width: 600px) {
   .cta {
-    width: 100%;
-    padding: clamp(16px, 5.5vw, 22px) 0;
-    font-size: clamp(18px, 5.6vw, 22px);
+    padding: clamp(6px, 1.8vw, 8px) clamp(12px, 2.5vw, 16px); /* 変更: さらに小さく */
+    font-size: clamp(11px, 2.8vw, 13px); /* 変更: さらに小さく */
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-left: 8px; /* 追加: 左マージン */
   }
 }
 
@@ -407,37 +457,34 @@
   }
 
   .content {
-    inset-inline: clamp(20px, 7vw, 28px);
-    inset-block-end: clamp(24px, 8vw, 34px);
-    gap: 12px;
-    max-inline-size: 100%;
+    display: grid; /* 左列: タイトル/メタ, 右列: CTA */
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto;
+    align-items: end;
+    justify-items: start;
+    inset-inline-start: clamp(8px, 2vw, 16px);
+    inset-inline-end: clamp(8px, 2vw, 16px);
+  }
+
+  .title {
+    grid-column: 1;
+    grid-row: 1;
+    margin: 0;
+    text-align: left;
   }
 
   .meta {
-    font-size: clamp(12px, 3.6vw, 13.5px);
-    gap: 10px;
-  }
-
-  .infoPanel {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 14px 16px 18px;
-    border-radius: 16px;
-    box-shadow:
-      0 14px 30px rgba(255, 130, 210, 0.28),
-      0 0 0 1px rgba(255, 255, 255, 0.5) inset;
-  }
-
-  .desc {
-    font-size: clamp(12.5px, 3.8vw, 13.5px);
-    -webkit-line-clamp: 3;
+    grid-column: 1;
+    grid-row: 2;
+    margin-top: 4px;
+    justify-content: flex-start;
   }
 
   .cta {
-    align-self: flex-end;
-    padding: 12px 26px;
-    font-size: clamp(14px, 4vw, 16px);
+    grid-column: 2;
+    grid-row: 1 / 3;
+    align-self: end;
+    justify-self: end;
   }
 
   .control {
@@ -461,5 +508,72 @@
 
   .dot[aria-selected="true"] {
     transform: none;
+  }
+
+  .cta {
+    padding: 10px 18px;            /* 上下+2px, 左右+4px */
+    font-size: clamp(13px, 4.2vw, 15px); /* 文字もほんの少し大きく */
+  }
+}
+
+@media (max-width: 640px) {
+  .root {
+    --hero-padding-block-start: clamp(4px, 2vh, 10px);
+    --hero-padding-block-end: clamp(6px, 2.5vh, 14px); /* 下部を小さく */
+  }
+}
+
+/* 640px以下でバッジを左上に、白枠も小さく（強制適用） */
+@media (max-width: 640px) {
+  .badge {
+    inset-block-start: 10px !important;      /* 上へ */
+    inset-inline-start: 10px !important;     /* 左へ */
+    inset-inline-end: auto !important;      /* 右基準を無効化 */
+    padding: 3px 6px !important;            /* 白枠を小さく */
+    font-size: clamp(9px, 2.4vw, 11px) !important; /* テキストも少し小さく */
+    inline-size: max-content !important;    /* 文字幅にフィット */
+    white-space: nowrap !important;         /* 折り返し防止 */
+  }
+}
+
+/* 画面上端（セーフエリア）に密着。必ず app/globals.css の一番下に置く */
+.layout__header {
+  inset-block-start: var(--safe-top, 0px) !important; /* topを0に */
+  padding-block-start: 0 !important; /* 上パディングをゼロに */
+}
+
+/* モバイル側で再度上書きされるのを防ぐため、メディアクエリ側も明示 */
+@media (max-width: 720px) {
+  .layout__header {
+    inset-block-start: var(--safe-top, 0px) !important;
+    padding-block-start: 0 !important;
+  }
+}
+
+/* 画面最上端に密着（セーフエリア優先） */
+body .layout__header {
+  inset-block-start: var(--safe-top, 0px) !important;
+  padding-block: 6px !important; /* 内側の上下パディング最小化 */
+}
+
+/* モバイル側で再上書きされるのを防ぐ */
+@media (max-width: 720px) {
+  body .layout__header {
+    inset-block-start: var(--safe-top, 0px) !important;
+    padding-block: 6px !important;
+  }
+}
+
+/* 上部の余白を小さく（PC/タブレット） */
+@media (min-width: 721px) {
+  .layout {
+    padding-block-start: calc(var(--safe-top, 0px) + clamp(8px, 3vw, 16px)) !important;
+  }
+}
+
+/* モバイル側も必要なら */
+@media (max-width: 720px) {
+  .layout {
+    padding-block-start: calc(var(--safe-top, 0px) + clamp(6px, 3vw, 12px)) !important;
   }
 }
