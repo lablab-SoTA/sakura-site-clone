@@ -21,6 +21,8 @@
   --space-2: 0.5rem;
   --space-3: 0.75rem;
   --space-4: 1rem;
+  --font-brand: "Noto Sans JP", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-body: "Noto Sans JP", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-family: "Noto Sans JP", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
@@ -203,10 +205,10 @@ a {
 .ux-carousel__viewport {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(100%, 1fr);
+  grid-auto-columns: 100%;
   gap: 0;
   overflow-x: auto;
-  overflow-y: visible;
+  overflow-y: hidden;
   scroll-snap-type: x mandatory;
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
@@ -234,6 +236,19 @@ a {
 @media (max-width: 480px) {
   .ux-media-cover {
     aspect-ratio: 9 / 16;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .ux-carousel__viewport {
+    scroll-behavior: auto;
+  }
+  .ux-animate {
+    transition-duration: 0ms !important;
+    animation: none !important;
   }
 }
 

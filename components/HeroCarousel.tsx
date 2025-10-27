@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useId } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import styles from "./HeroCarousel.module.css";
@@ -17,7 +17,9 @@ export default function HeroCarousel({ slides }: Readonly<HeroCarouselProps>) {
     () => slides.map((s) => `${s.anime.slug}-${s.episode.id}`).join("|"),
     [slides],
   );
-  const { rootRef, activeIndex, goTo } = useHeroCarousel({ slideCount, trackKey: slideKey });
+  const { rootRef, activeIndex, goTo, next, prev } = useHeroCarousel({ slideCount, trackKey: slideKey });
+  const viewportDomId = useId();
+  const viewportId = useMemo(() => `hero-carousel-viewport-${viewportDomId.replace(/:/g, "")}`, [viewportDomId]);
   const handleDotClick = useCallback((index: number) => {
     goTo(index);
   }, [goTo]);
@@ -37,7 +39,13 @@ export default function HeroCarousel({ slides }: Readonly<HeroCarouselProps>) {
     >
       <div className={`hero__bg ${styles.background}`} aria-hidden="true" />
 
-      <div className={`ux-carousel__viewport hero__viewport ${styles.viewport}`} tabIndex={0}>
+      <div
+        id={viewportId}
+        className={`ux-carousel__viewport hero__viewport ${styles.viewport}`}
+        tabIndex={0}
+        role="group"
+        aria-label="カルーセルスライド"
+      >
         {slides.map(({ anime, episode }, index) => {
           const isActive = index === activeIndex;
           const HeadingTag = index === 0 ? "h1" : "h2";
@@ -102,6 +110,31 @@ export default function HeroCarousel({ slides }: Readonly<HeroCarouselProps>) {
           );
         })}
       </div>
+
+      {slideCount > 1 && (
+        <>
+          <button
+            type="button"
+            className={`hero__control hero__control--prev ux-carousel__btn ux-carousel__btn--prev ${styles.control}`}
+            data-carousel-prev
+            aria-label="前のスライドへ"
+            aria-controls={viewportId}
+            onClick={prev}
+          >
+            <span aria-hidden="true">&lt;</span>
+          </button>
+          <button
+            type="button"
+            className={`hero__control hero__control--next ux-carousel__btn ux-carousel__btn--next ${styles.control}`}
+            data-carousel-next
+            aria-label="次のスライドへ"
+            aria-controls={viewportId}
+            onClick={next}
+          >
+            <span aria-hidden="true">&gt;</span>
+          </button>
+        </>
+      )}
 
       {/* ドットナビゲーション */}
       {slides.length > 1 && (

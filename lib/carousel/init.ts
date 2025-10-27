@@ -57,7 +57,7 @@ function createController(
   state: CarouselState,
   loop: LoopController,
 ): CarouselController {
-  const { root, viewport, slides } = elements;
+  const { root, viewport, slides, prevButton, nextButton } = elements;
   const resolvedSlides = slides;
 
   const detachments: EventTeardown[] = [];
@@ -87,6 +87,8 @@ function createController(
   const prev = () => step(-1);
 
   detachments.push(attachKeyboardControls(root, viewport, { next, prev, goTo, slides: resolvedSlides }));
+  detachments.push(attachControlButton(prevButton, prev));
+  detachments.push(attachControlButton(nextButton, next));
   detachments.push(attachWheelIntent(viewport, options.snapThresholdRatio));
   detachments.push(
     attachScrollObserver(viewport, state, resolvedSlides, loop, (index) => {
@@ -427,4 +429,16 @@ function observeMotionPreference(state: CarouselState, autoplay: { start: () => 
   return {
     dispose: () => media.removeEventListener?.("change", listener),
   };
+}
+
+function attachControlButton(button: HTMLElement | null | undefined, handler: () => void): EventTeardown {
+  if (!button) {
+    return () => {};
+  }
+  const onClick = (event: MouseEvent) => {
+    event.preventDefault();
+    handler();
+  };
+  button.addEventListener("click", onClick);
+  return () => button.removeEventListener("click", onClick);
 }

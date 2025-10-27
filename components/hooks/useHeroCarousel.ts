@@ -13,6 +13,8 @@ type UseHeroCarouselResult = {
   rootRef: RefObject<HTMLElement | null>;
   activeIndex: number;
   goTo: (index: number) => void;
+  next: () => void;
+  prev: () => void;
 };
 
 export function useHeroCarousel({ slideCount, trackKey }: UseHeroCarouselOptions): UseHeroCarouselResult {
@@ -52,12 +54,22 @@ export function useHeroCarousel({ slideCount, trackKey }: UseHeroCarouselOptions
     controllerRef.current?.goTo(index);
   }, []);
 
+  const next = useCallback(() => {
+    controllerRef.current?.next();
+  }, []);
+
+  const prev = useCallback(() => {
+    controllerRef.current?.prev();
+  }, []);
+
   return useMemo(
     () => ({
       rootRef,
       activeIndex,
       goTo,
+      next,
+      prev,
     }),
-    [activeIndex, goTo],
+    [activeIndex, goTo, next, prev],
   );
 }

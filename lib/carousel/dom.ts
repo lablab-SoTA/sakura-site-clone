@@ -9,6 +9,8 @@ export type CarouselElements = {
   viewport: HTMLElement;
   slides: HTMLElement[];
   clones: Partial<Record<LoopCloneKind, HTMLElement>>;
+  prevButton?: HTMLElement | null;
+  nextButton?: HTMLElement | null;
 };
 
 export function queryCarouselElements(root: HTMLElement): CarouselElements | null {
@@ -19,11 +21,15 @@ export function queryCarouselElements(root: HTMLElement): CarouselElements | nul
   }
 
   const slides = rawSlides.filter((slide) => !slide.matches(CLONE_SELECTOR));
+  const prevButton = root.querySelector<HTMLElement>("[data-carousel-prev]");
+  const nextButton = root.querySelector<HTMLElement>("[data-carousel-next]");
   return {
     root,
     viewport,
     slides,
     clones: {},
+    prevButton,
+    nextButton,
   };
 }
 
