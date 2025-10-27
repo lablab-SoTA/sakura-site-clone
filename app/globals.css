@@ -802,15 +802,17 @@ a {
   .layout {
     padding-block-start: calc(var(--safe-top) + 64px);
     padding-block-end: max(44px, var(--safe-bottom));
-    padding-inline: max(var(--site-gutter), var(--safe-left)) max(var(--site-gutter), var(--safe-right));
+    padding-inline: 0; /* 変更: padding を 0 に */
+    max-width: 100%;
+    width: 100%;
   }
 
   .layout__header {
     inset-block-start: calc(var(--safe-top) + clamp(4px, 3vw, 12px));
     inset-inline: 0;
-    margin-inline: auto;
+    margin-inline: 0; /* 変更: auto から 0 に */
     width: 100%;
-    max-width: calc(100% - var(--safe-left) - var(--safe-right));
+    max-width: 100%; /* 変更: calc を削除して 100% に */
     gap: clamp(10px, 4vw, 16px);
     justify-content: flex-start;
     align-items: center;
@@ -823,7 +825,7 @@ a {
 
   .layout__main {
     gap: 32px;
-    padding-inline: max(var(--site-gutter), var(--safe-left)) max(var(--site-gutter), var(--safe-right));
+    padding-inline: 0; /* 変更: padding を 0 に */
   }
 
   .page-title {
