@@ -17,6 +17,10 @@
   --dur-fast: 150ms;
   --dur-normal: 200ms;
   --dur-slow: 300ms;
+  --safe-top: env(safe-area-inset-top);
+  --safe-right: env(safe-area-inset-right);
+  --safe-bottom: env(safe-area-inset-bottom);
+  --safe-left: env(safe-area-inset-left);
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
@@ -28,9 +32,9 @@
 
 html {
   scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
 }
 
-*,
 *,
 *::before,
 *::after {
@@ -45,7 +49,34 @@ body {
     var(--bg);
   color: var(--fg);
   min-height: 100vh;
+  min-height: 100dvh;
   overflow-x: hidden;
+}
+
+img,
+video,
+canvas,
+svg,
+iframe {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+input,
+select,
+textarea {
+  font-size: 16px;
+}
+
+.breakable {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.safe-pad {
+  padding-inline: max(16px, var(--safe-left)) max(16px, var(--safe-right));
+  padding-block-end: max(16px, var(--safe-bottom));
 }
 
 @supports (height: 100dvh) {
@@ -73,10 +104,13 @@ a {
 .layout {
   max-width: 1440px;
   margin: 0 auto;
-  padding: clamp(96px, 20vw, 160px) var(--site-gutter) 80px;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  min-block-size: 100vh;
+  min-block-size: 100dvh;
+  padding-block-start: calc(var(--safe-top) + clamp(96px, 20vw, 160px));
+  padding-block-end: max(80px, var(--safe-bottom));
+  padding-inline: max(var(--site-gutter), var(--safe-left)) max(var(--site-gutter), var(--safe-right));
 }
 
 .layout__header {
@@ -85,13 +119,15 @@ a {
   align-items: center;
   justify-content: space-between;
   gap: 16px clamp(24px, 4vw, 48px);
-  padding: clamp(10px, 2vw, 22px) clamp(18px, 4vw, 32px);
+  padding-block: clamp(10px, 2vw, 22px);
+  padding-inline: max(clamp(18px, 4vw, 32px), var(--safe-left)) max(clamp(18px, 4vw, 32px), var(--safe-right));
   border-bottom: 1px solid var(--border);
   position: fixed;
-  top: clamp(8px, 2vw, 20px);
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(calc(100% - 2 * var(--site-gutter)), 1320px);
+  inset-block-start: calc(var(--safe-top) + clamp(8px, 2vw, 20px));
+  inset-inline: 0;
+  margin-inline: auto;
+  width: min(100%, 1320px);
+  max-width: min(1320px, calc(100% - var(--safe-left) - var(--safe-right)));
   background: var(--bg);
   box-shadow: 0 12px 30px rgba(31, 34, 46, 0.08);
   z-index: 200;
@@ -198,34 +234,6 @@ a {
   margin-inline: auto;
 }
 
-[data-carousel] {
-  position: relative;
-}
-
-.ux-carousel__viewport {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 100%;
-  gap: 0;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scroll-snap-type: x mandatory;
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-inline: contain;
-  scrollbar-width: none;
-  touch-action: pan-x pan-y;
-}
-
-.ux-carousel__viewport::-webkit-scrollbar {
-  display: none;
-}
-
-[data-slide] {
-  scroll-snap-align: center;
-  scroll-snap-stop: always;
-}
-
 .ux-media-cover {
   width: 100%;
   height: auto;
@@ -243,38 +251,10 @@ a {
   html {
     scroll-behavior: auto;
   }
-  .ux-carousel__viewport {
-    scroll-behavior: auto;
-  }
   .ux-animate {
     transition-duration: 0ms !important;
     animation: none !important;
   }
-}
-
-.ux-carousel__btn {
-  position: absolute;
-  inset-block: 50%;
-  transform: translateY(-50%);
-  inline-size: 2.5rem;
-  block-size: 2.5rem;
-  display: grid;
-  place-items: center;
-  border-radius: 9999px;
-  background: color-mix(in oklab, Canvas 70%, transparent);
-  transition: background var(--dur-fast) var(--ease-standard);
-}
-
-.ux-carousel__btn:hover {
-  background: color-mix(in oklab, Canvas 85%, transparent);
-}
-
-.ux-carousel__btn--prev {
-  inset-inline-start: var(--space-3);
-}
-
-.ux-carousel__btn--next {
-  inset-inline-end: var(--space-3);
 }
 
 .episode-hero {
@@ -682,10 +662,6 @@ a {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ux-carousel__viewport {
-    scroll-behavior: auto;
-  }
-
   .ux-animate {
     transition-duration: 0ms !important;
     animation: none !important;
@@ -1011,6 +987,7 @@ a {
   display: grid;
   place-items: center;
   min-height: calc(100vh - 160px);
+  min-height: calc(100dvh - 160px);
 }
 
 .age-gate__panel {
@@ -1060,27 +1037,30 @@ a {
   }
 
   .layout {
-    padding: 64px 0 44px;
+    padding-block-start: calc(var(--safe-top) + 64px);
+    padding-block-end: max(44px, var(--safe-bottom));
+    padding-inline: max(var(--site-gutter), var(--safe-left)) max(var(--site-gutter), var(--safe-right));
   }
 
   .layout__header {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    transform: none;
+    inset-block-start: calc(var(--safe-top) + clamp(4px, 3vw, 12px));
+    inset-inline: 0;
+    margin-inline: auto;
     width: 100%;
+    max-width: calc(100% - var(--safe-left) - var(--safe-right));
     gap: clamp(10px, 4vw, 16px);
     justify-content: flex-start;
     align-items: center;
-    padding: clamp(12px, 4vw, 16px) clamp(12px, 5vw, 24px);
+    padding-block: clamp(12px, 4vw, 16px);
+    padding-inline: max(clamp(12px, 5vw, 24px), var(--safe-left))
+      max(clamp(12px, 5vw, 24px), var(--safe-right));
     background: var(--bg);
     box-shadow: 0 6px 16px rgba(31, 34, 46, 0.08);
   }
 
   .layout__main {
     gap: 32px;
-    padding-inline: var(--site-gutter);
+    padding-inline: max(var(--site-gutter), var(--safe-left)) max(var(--site-gutter), var(--safe-right));
   }
 
   .page-title {
@@ -1123,7 +1103,7 @@ a {
 
   .layout__footer {
     margin-inline: 0;
-    padding-inline: var(--site-gutter);
+    padding-inline: max(var(--site-gutter), var(--safe-left)) max(var(--site-gutter), var(--safe-right));
   }
 
   .watch-page {
@@ -1185,15 +1165,17 @@ a {
     gap: 14px;
     overflow-x: auto;
     padding: 12px 0 18px;
-    padding-inline: var(--site-gutter);
+    padding-inline: max(var(--site-gutter), var(--safe-left))
+      max(var(--site-gutter), var(--safe-right));
     margin-inline: 0;
     width: 100%;
-    max-width: 100vw;
+    max-width: 100%;
     box-sizing: border-box;
     scroll-snap-type: x proximity;
     scrollbar-width: none;
     overscroll-behavior-x: contain;
-    scroll-padding-inline: var(--site-gutter);
+    scroll-padding-inline: max(var(--site-gutter), var(--safe-left))
+      max(var(--site-gutter), var(--safe-right));
   }
 
   .episode-grid::-webkit-scrollbar {

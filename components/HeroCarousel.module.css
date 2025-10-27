@@ -3,8 +3,10 @@
   --hero-padding-block: clamp(40px, 8vh, 80px);
   display: grid;
   align-content: center;
-  justify-items: center;
-  padding: var(--hero-padding-block) clamp(16px, 5vw, 32px);
+  justify-items: stretch;
+  padding-block: var(--hero-padding-block);
+  padding-inline: max(clamp(16px, 5vw, 32px), var(--safe-left))
+    max(clamp(16px, 5vw, 32px), var(--safe-right));
   background: linear-gradient(180deg, rgba(255, 247, 251, 0.92), rgba(248, 247, 251, 0.98));
   overflow: hidden;
 }
@@ -16,24 +18,33 @@
 }
 
 .viewport {
-  display: grid;
-  grid-auto-columns: min(920px, 100%);
-  gap: clamp(16px, 3vw, 32px);
-  padding-inline: clamp(20px, 5vw, 52px);
-  scroll-padding-inline: clamp(20px, 5vw, 52px);
-  align-items: center;
+  position: relative;
+  inline-size: 100%;
+  max-inline-size: 1240px;
+  overflow: hidden;
+  touch-action: pan-y;
+  margin-inline: auto;
 }
 
-.viewport::-webkit-scrollbar {
-  display: none;
+.track {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  inline-size: 100%;
+  will-change: transform;
+  transition-property: transform;
+  transition-timing-function: var(--ease-standard);
+  user-select: none;
 }
 
 .slide {
-  inline-size: min(960px, 100%);
+  flex: 0 0 100%;
+  box-sizing: border-box;
   display: flex;
   justify-content: center;
   align-items: center;
-  padding-inline: clamp(4px, 1vw, 18px);
+  padding-inline: max(clamp(20px, 5vw, 52px), var(--safe-left))
+    max(clamp(20px, 5vw, 52px), var(--safe-right));
   padding-block: clamp(8px, 3vh, 18px);
 }
 
@@ -41,7 +52,7 @@
   z-index: 2;
 }
 
-.slide[data-slide-clone] .card {
+.slide[data-clone="true"] .card {
   pointer-events: none;
 }
 
@@ -211,16 +222,12 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 12px;
+  gap: clamp(8px, 2vw, 12px);
   padding: 8px 16px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.8);
   box-shadow: none;
   z-index: 2;
-}
-
-.dots {
-  gap: clamp(8px, 2vw, 12px);
 }
 
 .dot {
@@ -241,15 +248,46 @@
 }
 
 .control {
+  position: absolute;
+  inset-block: 50%;
+  display: grid;
+  place-items: center;
+  inline-size: clamp(36px, 7vw, 44px);
+  block-size: clamp(36px, 7vw, 44px);
+  border-radius: 999px;
+  border: 1px solid rgba(255, 170, 220, 0.24);
+  background: color-mix(in oklab, #ffffff 85%, transparent);
   color: rgba(40, 32, 52, 0.84);
-  border: 1px solid rgba(255, 170, 220, 0.2);
-  box-shadow: none;
-  backdrop-filter: none;
+  box-shadow: 0 10px 24px rgba(18, 16, 32, 0.18);
+  backdrop-filter: blur(10px);
+  transform: translateY(-50%);
+  transition: background 180ms var(--ease-standard), box-shadow 180ms var(--ease-standard);
+  z-index: 3;
+}
+
+.control[data-direction="prev"] {
+  inset-inline-start: clamp(12px, 3vw, 28px);
+}
+
+.control[data-direction="next"] {
+  inset-inline-end: clamp(12px, 3vw, 28px);
 }
 
 .control span {
   font-size: clamp(1.1rem, 3vw, 1.4rem);
   line-height: 1;
+}
+
+@media (hover: hover) {
+  .control:hover {
+    background: color-mix(in oklab, #ffffff 92%, transparent);
+    box-shadow: 0 12px 32px rgba(18, 16, 32, 0.22);
+  }
+}
+
+.control:focus-visible {
+  outline: 2px solid rgba(255, 120, 200, 0.5);
+  outline-offset: 2px;
 }
 
 @supports (top: env(safe-area-inset-bottom)) {
@@ -266,16 +304,11 @@
   }
 
   .viewport {
-    grid-auto-columns: clamp(310px, 85vw, 348px);
-    gap: 14px;
-    padding-inline: clamp(12px, 5vw, 20px);
-    scroll-padding-inline: clamp(12px, 5vw, 20px);
-    justify-items: center;
+    max-inline-size: none;
   }
 
   .slide {
-    inline-size: clamp(310px, 85vw, 348px);
-    padding-inline: 0;
+    padding-inline: clamp(12px, 5vw, 20px);
     padding-block: clamp(10px, 4vw, 18px);
     min-block-size: auto;
   }

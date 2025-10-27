@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -33,6 +33,12 @@ export const metadata: Metadata = {
     description: "xanime（エックスアニメ）は日本で最高のヘンタイアニメをお届けします。",
     images: ["/images/title.jpg"],
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 const primaryNav: Array<{ href: string; label: string }> = [];
