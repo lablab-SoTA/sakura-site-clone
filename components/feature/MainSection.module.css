@@ -8,7 +8,7 @@
 
 .heroRegion {
   position: relative;
-  margin-inline: clamp(-24px, -6vw, -18px);
+  width: 100%;
 }
 
 .episodeSection {
@@ -43,7 +43,6 @@
   gap: 14px;
   overflow-x: auto;
   padding: 12px clamp(18px, 6vw, 24px) 6px;
-  margin-inline: clamp(-24px, -6vw, -18px);
   scroll-snap-type: x mandatory;
   scroll-padding-inline: clamp(18px, 6vw, 24px);
   -webkit-overflow-scrolling: touch;

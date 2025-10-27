@@ -1,6 +1,6 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import {
@@ -33,7 +33,13 @@ export async function verifyAgeAction(formData: FormData) {
     path: "/",
   });
 
-  const destination = new URL(nextLocation, "https://xanime.local");
+  const headerList = await headers();
+  const host = headerList.get("x-forwarded-host") ?? headerList.get("host");
+  const proto =
+    headerList.get("x-forwarded-proto") ?? (process.env.NODE_ENV === "production" ? "https" : "http");
+  const baseUrl = host ? `${proto}://${host}` : `${proto}://localhost:3000`;
+
+  const destination = new URL(nextLocation, baseUrl);
   destination.searchParams.set(AGE_VERIFIED_QUERY_PARAM, AGE_VERIFIED_QUERY_VALUE);
 
   redirect(`${destination.pathname}${destination.search}${destination.hash}`);

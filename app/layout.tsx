@@ -7,6 +7,10 @@ import AgeGateQueryReset from "@/components/AgeGateQueryReset";
 
 import "./globals.css";
 
+// 実際のサイトURLとOGP画像URL
+const SITE_URL = "https://xanime.net";
+const OG_IMAGE = `${SITE_URL}/images/title.jpg`;
+
 export const metadata: Metadata = {
   title: "xanime｜インディーアニメの配信ポータル",
   description: "xanime（エックスアニメ）は日本で最高のヘンタイアニメをお届けします。",
@@ -14,13 +18,13 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "ja_JP",
-    url: "https://xanime.example.com",
+    url: SITE_URL,
     siteName: "xanime",
     title: "xanime｜インディーアニメの配信ポータル",
     description: "xanime（エックスアニメ）は日本で最高のヘンタイアニメをお届けします。",
     images: [
       {
-        url: "/images/title.jpg",
+        url: OG_IMAGE,
         width: 1929,
         height: 1092,
         alt: "xanime ロゴ",
@@ -31,7 +35,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "xanime｜インディーアニメの配信ポータル",
     description: "xanime（エックスアニメ）は日本で最高のヘンタイアニメをお届けします。",
-    images: ["/images/title.jpg"],
+    images: [OG_IMAGE],
   },
 };
 

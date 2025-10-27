@@ -114,7 +114,7 @@ export default async function WatchPage({ params, searchParams }: WatchPageProps
       <section className="detail">
         <div>
           <span className="tag">xanime Originals</span>
-          <h1 className="hero__title watch-title">{activeEpisode.title}</h1>
+          <h1 className="watch-title">{activeEpisode.title}</h1>
         </div>
         <div className="detail__meta">
           <span>{anime.title}</span>

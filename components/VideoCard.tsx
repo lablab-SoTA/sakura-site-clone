@@ -1,14 +1,13 @@
 import Link from "next/link";
 
 import type { Anime, AnimeEpisode } from "@/lib/anime";
+import { formatNumberJP } from "@/lib/intl";
 import { XANIME_THUMB_PLACEHOLDER } from "@/lib/placeholders";
 
 type EpisodeCardProps = {
   anime: Anime;
   episode: AnimeEpisode;
 };
-
-const numberFormatter = new Intl.NumberFormat("ja-JP");
 
 export default function VideoCard({ anime, episode }: EpisodeCardProps) {
   const thumbSrc = episode.video.poster || anime.thumbnail || XANIME_THUMB_PLACEHOLDER;
@@ -27,7 +26,7 @@ export default function VideoCard({ anime, episode }: EpisodeCardProps) {
       <div className="episode-card__body">
         <h3 className="episode-card__title">{anime.title}</h3>
         <p className="episode-card__episode-title">{episode.title}</p>
-        <p className="episode-card__views">▶ {numberFormatter.format(views)}</p>
+        <p className="episode-card__views">▶ {formatNumberJP(views)}</p>
       </div>
     </Link>
   );

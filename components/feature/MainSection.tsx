@@ -4,6 +4,7 @@ import Image from "next/image";
 import HeroCarousel from "@/components/HeroCarousel";
 import { XANIME_THUMB_PLACEHOLDER } from "@/lib/placeholders";
 import type { Anime, AnimeEpisode } from "@/lib/anime";
+import { formatNumberJP } from "@/lib/intl";
 
 import styles from "./MainSection.module.css";
 
@@ -16,8 +17,6 @@ type MainSectionProps = {
   heroSlides: Highlight[];
   featuredEpisodes: Highlight[];
 };
-
-const numberFormatter = new Intl.NumberFormat("ja-JP");
 
 export default function MainSection({ heroSlides, featuredEpisodes }: MainSectionProps) {
   if (heroSlides.length === 0 && featuredEpisodes.length === 0) {
@@ -65,7 +64,7 @@ export default function MainSection({ heroSlides, featuredEpisodes }: MainSectio
                   <div className={styles.cardBody}>
                     <p className={styles.series}>{anime.title}</p>
                     <p className={styles.episodeTitle}>{episode.title}</p>
-                    <p className={styles.plays}>▶ {numberFormatter.format(views)}</p>
+                    <p className={styles.plays}>▶ {formatNumberJP(views)}</p>
                   </div>
                 </Link>
               );
