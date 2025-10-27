@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties }
 
 import Hls from "hls.js";
 
+import useAutoHideVideoControls from "@/components/hooks/useAutoHideVideoControls";
 import { XANIME_THUMB_PLACEHOLDER } from "@/lib/placeholders";
 
 type PlayerProps = {
@@ -14,6 +15,8 @@ type PlayerProps = {
   muted?: boolean;
   showControls?: boolean;
 };
+
+const CONTROLS_HIDE_DELAY_MS = 4000;
 
 export default function Player({
   src,
@@ -27,32 +30,10 @@ export default function Player({
   const [videoDimensions, setVideoDimensions] = useState({ width: 16, height: 9 });
   const resolvedPoster = poster || XANIME_THUMB_PLACEHOLDER;
 
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    const handlePlay = () => {
-      // keep track implicitly via video state
-    };
-
-    const handlePause = () => {
-      // nothing else to do
-    };
-
-    video.addEventListener("play", handlePlay);
-    video.addEventListener("pause", handlePause);
-    video.addEventListener("ended", handlePause);
-
-    if (!video.paused && !video.ended) {
-      handlePlay();
-    }
-
-    return () => {
-      video.removeEventListener("play", handlePlay);
-      video.removeEventListener("pause", handlePause);
-      video.removeEventListener("ended", handlePause);
-    };
-  }, []);
+  const { controlsVisible, showTemporarily } = useAutoHideVideoControls(videoRef, {
+    enabled: showControls,
+    hideDelayMs: CONTROLS_HIDE_DELAY_MS,
+  });
 
   useEffect(() => {
     const video = videoRef.current;
@@ -79,24 +60,34 @@ export default function Player({
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video) return;
-    video.muted = muted;
-  }, [muted]);
-
-  useEffect(() => {
-    const video = videoRef.current;
     if (!video || !autoPlay) return;
 
     const attemptPlay = async () => {
       try {
         await video.play();
       } catch {
-        // will remain paused; user can tap to resume
+        // autoplay might be blocked; user interaction will resume playback
       }
     };
 
     attemptPlay();
   }, [autoPlay, src]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = muted;
+  }, [muted]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (!showControls) {
+      video.controls = false;
+      return;
+    }
+    video.controls = controlsVisible;
+  }, [controlsVisible, showControls]);
 
   const updateDimensions = useCallback((video: HTMLVideoElement | null) => {
     if (!video) {
@@ -145,6 +136,19 @@ export default function Player({
     }
   }, []);
 
+  const controlsState = showControls ? controlsVisible : false;
+
+  const handleVideoClick = useCallback(() => {
+    if (!showControls) {
+      togglePlayback();
+      return;
+    }
+
+    if (!controlsState) {
+      showTemporarily();
+    }
+  }, [controlsState, showControls, showTemporarily, togglePlayback]);
+
   const videoOrientation = useMemo<"landscape" | "portrait" | "square">(() => {
     const { width, height } = videoDimensions;
     if (height > width * 1.05) return "portrait";
@@ -172,6 +176,7 @@ export default function Player({
       className="player-container"
       style={containerStyle}
       data-orientation={videoOrientation}
+      data-controls-visible={controlsState ? "true" : "false"}
     >
       <video
         ref={videoRef}
@@ -185,13 +190,25 @@ export default function Player({
         preload="metadata"
         controlsList={showControls ? "nodownload noplaybackrate" : undefined}
         disablePictureInPicture
-        onClick={showControls ? undefined : togglePlayback}
+        onClick={handleVideoClick}
         onContextMenu={(event) => event.preventDefault()}
         onLoadedMetadata={() => updateDimensions(videoRef.current)}
       >
         {!src.endsWith(".m3u8") && <source src={src} />}
         お使いのブラウザはこの動画形式に対応していません。
       </video>
+      {showControls && (
+        <button
+          type="button"
+          className="player-gesture-layer"
+          aria-label="動画の操作を表示"
+          tabIndex={controlsState ? -1 : 0}
+          data-active={controlsState ? "false" : "true"}
+          onClick={() => showTemporarily()}
+          onPointerDown={() => showTemporarily()}
+          onTouchStart={() => showTemporarily()}
+        />
+      )}
     </div>
   );
 }

@@ -1,11 +1,14 @@
-import type { Metadata } from "next";
-import Image from "next/image";
-import Link from "next/link";
+import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 
 import AgeGateQueryReset from "@/components/AgeGateQueryReset";
+import Header from "@/components/Header";
 
 import "./globals.css";
+
+// 実際のサイトURLとOGP画像URL
+const SITE_URL = "https://xanime.net";
+const OG_IMAGE = `${SITE_URL}/images/title.jpg`;
 
 export const metadata: Metadata = {
   title: "xanime｜インディーアニメの配信ポータル",
@@ -14,13 +17,13 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "ja_JP",
-    url: "https://xanime.example.com",
+    url: SITE_URL,
     siteName: "xanime",
     title: "xanime｜インディーアニメの配信ポータル",
     description: "xanime（エックスアニメ）は日本で最高のヘンタイアニメをお届けします。",
     images: [
       {
-        url: "/images/title.jpg",
+        url: OG_IMAGE,
         width: 1929,
         height: 1092,
         alt: "xanime ロゴ",
@@ -31,8 +34,14 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "xanime｜インディーアニメの配信ポータル",
     description: "xanime（エックスアニメ）は日本で最高のヘンタイアニメをお届けします。",
-    images: ["/images/title.jpg"],
+    images: [OG_IMAGE],
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 const primaryNav: Array<{ href: string; label: string }> = [];
@@ -45,28 +54,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <AgeGateQueryReset />
         </Suspense>
         <div className="layout">
-          <header className="layout__header">
-            <Link href="/" className="brand" aria-label="xanime ホーム">
-              <Image
-                src="/images/logo2.svg"
-                alt="xanime"
-                width={320}
-                height={80}
-                className="brand__logo"
-                sizes="(max-width: 720px) 160px, 220px"
-                priority
-              />
-            </Link>
-            {primaryNav.length > 0 && (
-              <nav className="layout__nav">
-                {primaryNav.map((item) => (
-                  <Link key={item.label} href={item.href} className="layout__nav-item">
-                    {item.label}
-                  </Link>
-                ))}
-              </nav>
-            )}
-          </header>
+          <Header primaryNav={primaryNav} />
           <main className="layout__main">{children}</main>
           <footer className="layout__footer">
             <p>© {new Date().getFullYear()} xanime Studio. All rights reserved.</p>

@@ -1,107 +1,136 @@
 "use client";
 
-import { useCallback, useMemo, useId } from "react";
+import { useMemo, type CSSProperties } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import styles from "./HeroCarousel.module.css";
-import type { Anime, AnimeEpisode } from "@/lib/anime";
-import { useHeroCarousel } from "@/components/hooks/useHeroCarousel";
+
+import useHeroCarousel, { type HeroSlide } from "@/components/hooks/useHeroCarousel";
+import { formatNumberJP } from "@/lib/intl";
 import { XANIME_THUMB_PLACEHOLDER } from "@/lib/placeholders";
 
-type HeroSlide = { anime: Anime; episode: AnimeEpisode };
-type HeroCarouselProps = { slides: HeroSlide[] };
+import styles from "./HeroCarousel.module.css";
+
+type HeroCarouselProps = {
+  slides: HeroSlide[];
+};
 
 export default function HeroCarousel({ slides }: Readonly<HeroCarouselProps>) {
-  const slideCount = slides.length;
-  const slideKey = useMemo(
-    () => slides.map((s) => `${s.anime.slug}-${s.episode.id}`).join("|"),
-    [slides],
-  );
-  const { rootRef, activeIndex, goTo, next, prev } = useHeroCarousel({
+  const {
+    trackItems,
     slideCount,
-    trackKey: slideKey,
-    autoplay: slideCount > 1,
-    intervalMs: 6000,
-  });
-  const viewportDomId = useId();
-  const viewportId = useMemo(() => `hero-carousel-viewport-${viewportDomId.replace(/:/g, "")}`, [viewportDomId]);
-  const handleDotClick = useCallback((index: number) => {
-    goTo(index);
-  }, [goTo]);
+    hasLoop,
+    activeIndex,
+    viewportId,
+    translateIndex,
+    transitionDurationMs,
+    handleTransitionEnd,
+    handleKeyDown,
+    handlePointerDown,
+    handlePointerMove,
+    handlePointerUp,
+    handlePointerCancel,
+    handleFocusCapture,
+    handleBlurCapture,
+    isDragging,
+    goTo,
+    next,
+    prev,
+  } = useHeroCarousel(slides);
 
-  if (slideCount === 0) return null;
+  if (slideCount === 0) {
+    return null;
+  }
+
+  const trackStyle = useMemo<CSSProperties>(
+    () => ({
+      transform: `translate3d(-${translateIndex * 100}%, 0, 0)`,
+      transitionDuration: `${transitionDurationMs}ms`,
+    }),
+    [translateIndex, transitionDurationMs],
+  );
 
   return (
     <section
-      ref={rootRef}
-      className={`hero ${styles.root}`}
+      className={styles.root}
       data-carousel="hero"
       role="region"
       aria-roledescription="carousel"
       aria-label="人気のコンテンツ"
       aria-live="polite"
-      data-has-multiple={slideCount > 1 ? "true" : "false"}
+      data-has-multiple={hasLoop ? "true" : "false"}
+      onFocusCapture={handleFocusCapture}
+      onBlurCapture={handleBlurCapture}
     >
-      <div className={`hero__bg ${styles.background}`} aria-hidden="true" />
+      <div className={styles.background} aria-hidden="true" />
 
       <div
         id={viewportId}
-        className={`ux-carousel__viewport hero__viewport ${styles.viewport}`}
+        className={styles.viewport}
         tabIndex={0}
         role="group"
         aria-label="カルーセルスライド"
+        onKeyDown={handleKeyDown}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
+        data-dragging={isDragging ? "true" : "false"}
       >
-        {slides.map(({ anime, episode }, index) => {
-          const isActive = index === activeIndex;
-          const HeadingTag = index === 0 ? "h1" : "h2";
-          const posterSrc = episode.video.poster || anime.thumbnail || XANIME_THUMB_PLACEHOLDER;
-          const slidePositionLabel = `${index + 1}枚目 / ${slideCount}枚`;
+        <div className={styles.track} style={trackStyle} onTransitionEnd={handleTransitionEnd}>
+          {trackItems.map((item) => {
+            const isActive = !item.clone && item.originalIndex === activeIndex;
+            const HeadingTag = item.originalIndex === 0 ? "h1" : "h2";
+            const posterSrc = item.episode.video.poster || item.anime.thumbnail || XANIME_THUMB_PLACEHOLDER;
+            const slidePositionLabel = `${item.originalIndex + 1}枚目 / ${slideCount}枚`;
 
-          return (
-            <section
-              key={`${anime.slug}-${episode.id}`}
-              id={`hero-slide-${index}`}
-              className={`hero__slide ${styles.slide}`}
-              data-slide
-              data-active={isActive ? "true" : "false"}
-              aria-hidden={!isActive}
-              role="group"
-              aria-roledescription="slide"
-              aria-label={slidePositionLabel}
-            >
-              <div className={`heroCard ${styles.card}`} style={{ pointerEvents: isActive ? "auto" : "none" }}>
-                <div className={`heroCard__frame ${styles.frame}`}>
-                  <div className={`heroCard__inner ${styles.inner}`}>
-                    <Image
-                      src={posterSrc}
-                      alt={`${anime.title} ${episode.title}`}
-                      fill
-                      sizes="(min-width: 1024px) 920px, 92vw"
-                      className={`heroCard__image ${styles.image}`}
-                      priority={index === 0}
-                    />
-                    <div className={`heroCard__overlay ${styles.overlay}`} aria-hidden="true" />
+            const ariaProps = item.clone
+              ? { "aria-hidden": true as const }
+              : {
+                  role: "group" as const,
+                  "aria-roledescription": "slide" as const,
+                  "aria-label": slidePositionLabel,
+                  "aria-hidden": !isActive,
+                };
 
-                    <span className={`heroCard__badge ${styles.badge}`}>人気のコンテンツ</span>
+            return (
+              <section
+                key={item.key}
+                id={item.clone ? undefined : `hero-slide-${item.originalIndex}`}
+                className={styles.slide}
+                data-active={isActive ? "true" : "false"}
+                data-clone={item.clone ? "true" : "false"}
+                {...ariaProps}
+              >
+                <div className={styles.card} style={{ pointerEvents: isActive ? "auto" : "none" }}>
+                  <div className={styles.frame}>
+                    <div className={styles.inner}>
+                      <Image
+                        src={posterSrc}
+                        alt={`${item.anime.title} ${item.episode.title}`}
+                        fill
+                        sizes="(min-width: 1024px) 920px, 92vw"
+                        className={styles.image}
+                        priority={!item.clone && item.originalIndex === 0}
+                      />
+                      <div className={styles.overlay} aria-hidden="true" />
 
-                    <div className={`heroCard__content ${styles.content}`}>
-                      <HeadingTag className={`heroCard__title ${styles.title}`}>{anime.title.toUpperCase()}</HeadingTag>
+                      <span className={styles.badge}>人気のコンテンツ</span>
 
-                      <p className={`heroCard__meta ${styles.meta}`}>
-                        <span>▶ {toJP(episode.metrics?.views ?? 0)}</span>
-                        <span aria-hidden="true">／</span>
-                        <span>♥ {toJP(episode.metrics?.likes ?? 0)}</span>
-                        <span aria-hidden="true">／</span>
-                        <span>{formatDurationMinutes(episode.duration)}</span>
-                      </p>
+                      <div className={styles.content}>
+                        <HeadingTag className={styles.title}>{item.anime.title.toUpperCase()}</HeadingTag>
 
-                      <div className={`heroCard__infoPanel ${styles.infoPanel}`}>
-                        <p className={`heroCard__desc ${styles.desc}`}>{episode.synopsis}</p>
+                        <p className={styles.meta}>
+                          <span>▶ {formatNumberJP(item.episode.metrics?.views ?? 0)}</span>
+                          <span aria-hidden="true">／</span>
+                          <span>♥ {formatNumberJP(item.episode.metrics?.likes ?? 0)}</span>
+                          <span aria-hidden="true">／</span>
+                          <span>{formatDurationMinutes(item.episode.duration)}</span>
+                        </p>
 
                         <Link
-                          href={`/watch/${anime.slug}?episode=${episode.id}`}
-                          className={`heroCard__cta ${styles.cta}`}
-                          aria-label={`${anime.title} ${episode.title} を再生する`}
+                          href={`/watch/${item.anime.slug}?episode=${item.episode.id}`}
+                          className={styles.cta}
+                          aria-label={`${item.anime.title} ${item.episode.title} を再生する`}
                           tabIndex={isActive ? 0 : -1}
                         >
                           再生する
@@ -110,18 +139,18 @@ export default function HeroCarousel({ slides }: Readonly<HeroCarouselProps>) {
                     </div>
                   </div>
                 </div>
-              </div>
-            </section>
-          );
-        })}
+              </section>
+            );
+          })}
+        </div>
       </div>
 
       {slideCount > 1 && (
         <>
           <button
             type="button"
-            className={`hero__control hero__control--prev ux-carousel__btn ux-carousel__btn--prev ${styles.control}`}
-            data-carousel-prev
+            className={styles.control}
+            data-direction="prev"
             aria-label="前のスライドへ"
             aria-controls={viewportId}
             onClick={prev}
@@ -130,8 +159,8 @@ export default function HeroCarousel({ slides }: Readonly<HeroCarouselProps>) {
           </button>
           <button
             type="button"
-            className={`hero__control hero__control--next ux-carousel__btn ux-carousel__btn--next ${styles.control}`}
-            data-carousel-next
+            className={styles.control}
+            data-direction="next"
             aria-label="次のスライドへ"
             aria-controls={viewportId}
             onClick={next}
@@ -141,9 +170,8 @@ export default function HeroCarousel({ slides }: Readonly<HeroCarouselProps>) {
         </>
       )}
 
-      {/* ドットナビゲーション */}
-      {slides.length > 1 && (
-        <div className={`hero__dots ${styles.dots}`} role="tablist" aria-label="スライド選択">
+      {slideCount > 1 && (
+        <div className={styles.dots} role="tablist" aria-label="スライド選択">
           {slides.map((_, index) => {
             const selected = index === activeIndex;
             return (
@@ -153,8 +181,8 @@ export default function HeroCarousel({ slides }: Readonly<HeroCarouselProps>) {
                 role="tab"
                 aria-selected={selected}
                 aria-controls={`hero-slide-${index}`}
-                className={`hero__dot ${styles.dot}`}
-                onClick={() => handleDotClick(index)}
+                className={styles.dot}
+                onClick={() => goTo(index)}
               >
                 <span className="sr-only">{index + 1}枚目</span>
               </button>
@@ -164,10 +192,6 @@ export default function HeroCarousel({ slides }: Readonly<HeroCarouselProps>) {
       )}
     </section>
   );
-}
-
-function toJP(n: number) {
-  return new Intl.NumberFormat("ja-JP").format(n);
 }
 
 function formatDurationMinutes(seconds?: number) {

@@ -8,7 +8,7 @@
 
 .heroRegion {
   position: relative;
-  margin-inline: clamp(-24px, -6vw, -18px);
+  width: 100%;
 }
 
 .episodeSection {
@@ -19,6 +19,7 @@
 .sectionHeader {
   display: grid;
   gap: 6px;
+  padding-inline: clamp(18px, 6vw, 24px);
 }
 
 .sectionTitle {
@@ -43,7 +44,6 @@
   gap: 14px;
   overflow-x: auto;
   padding: 12px clamp(18px, 6vw, 24px) 6px;
-  margin-inline: clamp(-24px, -6vw, -18px);
   scroll-snap-type: x mandatory;
   scroll-padding-inline: clamp(18px, 6vw, 24px);
   -webkit-overflow-scrolling: touch;
@@ -135,6 +135,10 @@
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: clamp(18px, 4vw, 28px);
     scroll-snap-type: none;
+  }
+
+  .sectionHeader {
+    padding-inline: 0;
   }
 
   .episodeCard {

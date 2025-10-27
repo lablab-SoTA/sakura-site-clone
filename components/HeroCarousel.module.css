@@ -1,12 +1,22 @@
 .root {
   position: relative;
-  --hero-padding-block: clamp(40px, 8vh, 80px);
+  --hero-padding-block-start: clamp(12px, 4vh, 28px);
+  --hero-padding-block-end: clamp(28px, 7vh, 60px);
   display: grid;
   align-content: center;
-  justify-items: center;
-  padding: var(--hero-padding-block) clamp(16px, 5vw, 32px);
-  background: linear-gradient(180deg, rgba(255, 247, 251, 0.92), rgba(248, 247, 251, 0.98));
+  justify-items: stretch;
+  padding-block: var(--hero-padding-block-start) var(--hero-padding-block-end);
+  padding-inline: max(clamp(12px, 4vw, 26px), var(--safe-left))
+    max(clamp(12px, 4vw, 26px), var(--safe-right));
+  background: linear-gradient(180deg, rgba(255, 251, 253, 0.96), rgba(249, 248, 252, 0.98));
   overflow: hidden;
+}
+
+@media (max-width: 600px) {
+  .root {
+    padding-inline: max(clamp(6px, 2vw, 12px), var(--safe-left))
+      max(clamp(6px, 2vw, 12px), var(--safe-right));
+  }
 }
 
 .background {
@@ -16,64 +26,84 @@
 }
 
 .viewport {
-  display: grid;
-  grid-auto-columns: min(920px, 100%);
-  gap: clamp(16px, 3vw, 32px);
-  padding-inline: clamp(20px, 5vw, 52px);
-  scroll-padding-inline: clamp(20px, 5vw, 52px);
-  align-items: center;
+  position: relative;
+  inline-size: 100%;
+  max-inline-size: 1240px;
+  overflow: hidden;
+  touch-action: pan-y;
+  margin-inline: auto;
 }
 
-.viewport::-webkit-scrollbar {
-  display: none;
+.viewport[data-dragging="true"] {
+  touch-action: none;
+}
+
+.track {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  inline-size: 100%;
+  will-change: transform;
+  transition-property: transform;
+  transition-timing-function: var(--ease-standard);
+  user-select: none;
 }
 
 .slide {
-  inline-size: min(960px, 100%);
+  flex: 0 0 100%;
+  box-sizing: border-box;
   display: flex;
   justify-content: center;
   align-items: center;
-  padding-inline: clamp(4px, 1vw, 18px);
-  padding-block: clamp(8px, 3vh, 18px);
+  padding-inline: max(clamp(10px, 3vw, 36px), var(--safe-left))
+    max(clamp(10px, 3vw, 36px), var(--safe-right));
+  padding-block: clamp(6px, 2vh, 16px);
+}
+
+@media (max-width: 600px) {
+  .slide {
+    padding-inline: max(clamp(4px, 1.6vw, 10px), var(--safe-left))
+      max(clamp(4px, 1.6vw, 10px), var(--safe-right));
+  }
 }
 
 .slide[data-active="true"] {
   z-index: 2;
 }
 
-.slide[data-slide-clone] .card {
+.slide[data-clone="true"] .card {
   pointer-events: none;
 }
 
 .card {
-  inline-size: min(920px, 92vw);
-  max-inline-size: 920px;
+  inline-size: min(980px, 96vw);
+  max-inline-size: 980px;
   --hero-card-aspect: 16/9;
   transition: none;
 }
 
 @media (max-width: 600px) {
   .card {
-    --hero-card-aspect: 9/16;
-    inline-size: min(94vw, 460px);
+    --hero-card-aspect: 16/11;
+    inline-size: min(100vw, 620px);
   }
 }
 
 .frame {
   position: relative;
-  padding: 1.5px;
+  padding: 2px;
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(255, 170, 220, 0.2);
-  box-shadow: 0 18px 40px rgba(18, 16, 32, 0.16);
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(255, 170, 220, 0.18);
+  box-shadow: 0 14px 28px rgba(40, 32, 52, 0.12);
 }
 
 .inner {
   position: relative;
   overflow: hidden;
   border-radius: 27px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0.85));
-  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.45);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.92));
+  box-shadow: 0 20px 40px rgba(28, 26, 42, 0.18);
   aspect-ratio: var(--hero-card-aspect);
 }
 
@@ -90,7 +120,7 @@
 .overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.78));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.82));
   pointer-events: none;
   z-index: 1;
 }
@@ -120,6 +150,52 @@
   }
 }
 
+/* 変更: モバイルでのbadge位置調整 - innerの右上に、幅は文字に合わせる */
+@media (max-width: 600px) {
+  .badge {
+    inset-block-start: 8px;
+    inset-inline-start: auto;
+    inset-inline-end: 8px;
+    padding: 6px 12px; /* 変更: paddingを小さくして幅を文字に合わせる */
+    font-size: clamp(10px, 2.5vw, 12px); /* 変更: フォントサイズを小さく */
+  }
+}
+
+/* 位置のみ微調整（パディング等は変更しない） */
+/* PCなど */
+.badge {
+  inset-block-start: 10px; /* 18px → 10px にして上へ */
+  inset-inline-start: 8px; /* 14px → 8px にして左へ */
+}
+
+/* モバイル */
+@media (max-width: 600px) {
+  .badge {
+    inset-block-start: 4px;  /* さらに上へ */
+    inset-inline-start: 6px; /* さらに左へ */
+    inset-inline-end: auto;  /* 念のため右基準を無効化 */
+  }
+}
+
+/* 白枠を小さく＋左上へ寄せる（PC含む） */
+.badge {
+  padding: 6px 10px;                 /* 白枠の余白を少し縮小 */
+  font-size: clamp(12px, 1.6vw, 14px);/* 文字もわずかに縮小 */
+  inset-block-start: 8px;             /* 上へ */
+  inset-inline-start: 8px;            /* 左へ */
+}
+
+/* モバイルではさらにコンパクト＋左上へ */
+@media (max-width: 600px) {
+  .badge {
+    padding: 3px 6px;                        /* さらに小さく */
+    font-size: clamp(9px, 2.4vw, 11px);      /* さらに小さく */
+    inset-block-start: 4px;                  /* もっと上へ */
+    inset-inline-start: 6px;                 /* もっと左へ */
+    inset-inline-end: auto;                  /* 右基準を無効化 */
+  }
+}
+
 .content {
   position: absolute;
   inset-inline: clamp(28px, 6vw, 60px);
@@ -132,12 +208,37 @@
   z-index: 2;
 }
 
+@media (max-width: 600px) {
+  .content {
+    inset-block-start: auto;
+    inset-block-end: clamp(4px, 2vw, 8px); /* 変更: 値をさらに小さくしてギリギリ下に配置 */
+    inset-inline-end: clamp(8px, 2vw, 16px);
+    inset-inline-start: auto;
+    gap: 6px;
+    max-inline-size: none;
+    width: auto;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+  }
+}
+
 .title {
   margin: 0;
   font-weight: 900;
   font-size: clamp(28px, 6vw, 54px);
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+@media (max-width: 600px) {
+  .title {
+    font-size: clamp(16px, 4vw, 20px);
+    letter-spacing: 0.04em;
+    margin: 0;
+  }
 }
 
 .meta {
@@ -148,6 +249,16 @@
   font-weight: 700;
   font-size: clamp(15px, 2vw, 18px);
   color: rgba(40, 32, 52, 0.92);
+}
+
+@media (max-width: 600px) {
+  .meta {
+    display: flex; /* 変更: 表示する */
+    gap: 6px; /* 変更: gapを小さく */
+    font-size: clamp(10px, 2.5vw, 12px); /* 変更: フォントサイズを小さく */
+    margin: 0; /* 追加 */
+    flex-wrap: nowrap; /* 追加 */
+  }
 }
 
 .infoPanel {
@@ -162,6 +273,12 @@
   max-inline-size: min(640px, 100%);
 }
 
+@media (max-width: 600px) {
+  .infoPanel {
+    display: none;
+  }
+}
+
 .desc {
   margin: 0;
   flex: 1 1 auto;
@@ -172,6 +289,12 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+@media (max-width: 600px) {
+  .desc {
+    display: none;
+  }
 }
 
 .cta {
@@ -188,6 +311,16 @@
   background: var(--accent);
   box-shadow: none;
   transition: background 160ms var(--ease-standard);
+}
+
+@media (max-width: 600px) {
+  .cta {
+    padding: clamp(6px, 1.8vw, 8px) clamp(12px, 2.5vw, 16px); /* 変更: さらに小さく */
+    font-size: clamp(11px, 2.8vw, 13px); /* 変更: さらに小さく */
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-left: 8px; /* 追加: 左マージン */
+  }
 }
 
 .cta:hover {
@@ -211,16 +344,12 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 12px;
+  gap: clamp(8px, 2vw, 12px);
   padding: 8px 16px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.8);
   box-shadow: none;
   z-index: 2;
-}
-
-.dots {
-  gap: clamp(8px, 2vw, 12px);
 }
 
 .dot {
@@ -241,15 +370,46 @@
 }
 
 .control {
+  position: absolute;
+  inset-block: 50%;
+  display: grid;
+  place-items: center;
+  inline-size: clamp(36px, 7vw, 44px);
+  block-size: clamp(36px, 7vw, 44px);
+  border-radius: 999px;
+  border: 1px solid rgba(255, 170, 220, 0.24);
+  background: color-mix(in oklab, #ffffff 85%, transparent);
   color: rgba(40, 32, 52, 0.84);
-  border: 1px solid rgba(255, 170, 220, 0.2);
-  box-shadow: none;
-  backdrop-filter: none;
+  box-shadow: 0 10px 24px rgba(18, 16, 32, 0.18);
+  backdrop-filter: blur(10px);
+  transform: translateY(-50%);
+  transition: background 180ms var(--ease-standard), box-shadow 180ms var(--ease-standard);
+  z-index: 3;
+}
+
+.control[data-direction="prev"] {
+  inset-inline-start: clamp(12px, 3vw, 28px);
+}
+
+.control[data-direction="next"] {
+  inset-inline-end: clamp(12px, 3vw, 28px);
 }
 
 .control span {
   font-size: clamp(1.1rem, 3vw, 1.4rem);
   line-height: 1;
+}
+
+@media (hover: hover) {
+  .control:hover {
+    background: color-mix(in oklab, #ffffff 92%, transparent);
+    box-shadow: 0 12px 32px rgba(18, 16, 32, 0.22);
+  }
+}
+
+.control:focus-visible {
+  outline: 2px solid rgba(255, 120, 200, 0.5);
+  outline-offset: 2px;
 }
 
 @supports (top: env(safe-area-inset-bottom)) {
@@ -266,16 +426,11 @@
   }
 
   .viewport {
-    grid-auto-columns: clamp(310px, 85vw, 348px);
-    gap: 14px;
-    padding-inline: clamp(12px, 5vw, 20px);
-    scroll-padding-inline: clamp(12px, 5vw, 20px);
-    justify-items: center;
+    max-inline-size: none;
   }
 
   .slide {
-    inline-size: clamp(310px, 85vw, 348px);
-    padding-inline: 0;
+    padding-inline: clamp(12px, 5vw, 20px);
     padding-block: clamp(10px, 4vw, 18px);
     min-block-size: auto;
   }
@@ -302,37 +457,34 @@
   }
 
   .content {
-    inset-inline: clamp(20px, 7vw, 28px);
-    inset-block-end: clamp(24px, 8vw, 34px);
-    gap: 12px;
-    max-inline-size: 100%;
+    display: grid; /* 左列: タイトル/メタ, 右列: CTA */
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto;
+    align-items: end;
+    justify-items: start;
+    inset-inline-start: clamp(8px, 2vw, 16px);
+    inset-inline-end: clamp(8px, 2vw, 16px);
+  }
+
+  .title {
+    grid-column: 1;
+    grid-row: 1;
+    margin: 0;
+    text-align: left;
   }
 
   .meta {
-    font-size: clamp(12px, 3.6vw, 13.5px);
-    gap: 10px;
-  }
-
-  .infoPanel {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 14px 16px 18px;
-    border-radius: 16px;
-    box-shadow:
-      0 14px 30px rgba(255, 130, 210, 0.28),
-      0 0 0 1px rgba(255, 255, 255, 0.5) inset;
-  }
-
-  .desc {
-    font-size: clamp(12.5px, 3.8vw, 13.5px);
-    -webkit-line-clamp: 3;
+    grid-column: 1;
+    grid-row: 2;
+    margin-top: 4px;
+    justify-content: flex-start;
   }
 
   .cta {
-    align-self: flex-end;
-    padding: 12px 26px;
-    font-size: clamp(14px, 4vw, 16px);
+    grid-column: 2;
+    grid-row: 1 / 3;
+    align-self: end;
+    justify-self: end;
   }
 
   .control {
@@ -356,5 +508,72 @@
 
   .dot[aria-selected="true"] {
     transform: none;
+  }
+
+  .cta {
+    padding: 10px 18px;            /* 上下+2px, 左右+4px */
+    font-size: clamp(13px, 4.2vw, 15px); /* 文字もほんの少し大きく */
+  }
+}
+
+@media (max-width: 640px) {
+  .root {
+    --hero-padding-block-start: clamp(4px, 2vh, 10px);
+    --hero-padding-block-end: clamp(6px, 2.5vh, 14px); /* 下部を小さく */
+  }
+}
+
+/* 640px以下でバッジを左上に、白枠も小さく（強制適用） */
+@media (max-width: 640px) {
+  .badge {
+    inset-block-start: 10px !important;      /* 上へ */
+    inset-inline-start: 10px !important;     /* 左へ */
+    inset-inline-end: auto !important;      /* 右基準を無効化 */
+    padding: 3px 6px !important;            /* 白枠を小さく */
+    font-size: clamp(9px, 2.4vw, 11px) !important; /* テキストも少し小さく */
+    inline-size: max-content !important;    /* 文字幅にフィット */
+    white-space: nowrap !important;         /* 折り返し防止 */
+  }
+}
+
+/* 画面上端（セーフエリア）に密着。必ず app/globals.css の一番下に置く */
+.layout__header {
+  inset-block-start: var(--safe-top, 0px) !important; /* topを0に */
+  padding-block-start: 0 !important; /* 上パディングをゼロに */
+}
+
+/* モバイル側で再度上書きされるのを防ぐため、メディアクエリ側も明示 */
+@media (max-width: 720px) {
+  .layout__header {
+    inset-block-start: var(--safe-top, 0px) !important;
+    padding-block-start: 0 !important;
+  }
+}
+
+/* 画面最上端に密着（セーフエリア優先） */
+body .layout__header {
+  inset-block-start: var(--safe-top, 0px) !important;
+  padding-block: 6px !important; /* 内側の上下パディング最小化 */
+}
+
+/* モバイル側で再上書きされるのを防ぐ */
+@media (max-width: 720px) {
+  body .layout__header {
+    inset-block-start: var(--safe-top, 0px) !important;
+    padding-block: 6px !important;
+  }
+}
+
+/* 上部の余白を小さく（PC/タブレット） */
+@media (min-width: 721px) {
+  .layout {
+    padding-block-start: calc(var(--safe-top, 0px) + clamp(8px, 3vw, 16px)) !important;
+  }
+}
+
+/* モバイル側も必要なら */
+@media (max-width: 720px) {
+  .layout {
+    padding-block-start: calc(var(--safe-top, 0px) + clamp(6px, 3vw, 12px)) !important;
   }
 }
