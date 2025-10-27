@@ -17,7 +17,12 @@ export default function HeroCarousel({ slides }: Readonly<HeroCarouselProps>) {
     () => slides.map((s) => `${s.anime.slug}-${s.episode.id}`).join("|"),
     [slides],
   );
-  const { rootRef, activeIndex, goTo, next, prev } = useHeroCarousel({ slideCount, trackKey: slideKey });
+  const { rootRef, activeIndex, goTo, next, prev } = useHeroCarousel({
+    slideCount,
+    trackKey: slideKey,
+    autoplay: slideCount > 1,
+    intervalMs: 6000,
+  });
   const viewportDomId = useId();
   const viewportId = useMemo(() => `hero-carousel-viewport-${viewportDomId.replace(/:/g, "")}`, [viewportDomId]);
   const handleDotClick = useCallback((index: number) => {

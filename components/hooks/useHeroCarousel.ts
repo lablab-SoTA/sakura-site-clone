@@ -7,6 +7,8 @@ import { initCarousel } from "@/lib/ux-carousel";
 type UseHeroCarouselOptions = {
   slideCount: number;
   trackKey: string;
+  autoplay?: boolean;
+  intervalMs?: number;
 };
 
 type UseHeroCarouselResult = {
@@ -17,7 +19,7 @@ type UseHeroCarouselResult = {
   prev: () => void;
 };
 
-export function useHeroCarousel({ slideCount, trackKey }: UseHeroCarouselOptions): UseHeroCarouselResult {
+export function useHeroCarousel({ slideCount, trackKey, autoplay, intervalMs }: UseHeroCarouselOptions): UseHeroCarouselResult {
   const rootRef = useRef<HTMLElement | null>(null);
   const controllerRef = useRef<CarouselController | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -32,6 +34,8 @@ export function useHeroCarousel({ slideCount, trackKey }: UseHeroCarouselOptions
 
     const controller = initCarousel(root, {
       loop: loopEnabled,
+      autoplay: autoplay && loopEnabled,
+      intervalMs,
       onChange: (index) => setActiveIndex(index),
     });
 
@@ -48,7 +52,7 @@ export function useHeroCarousel({ slideCount, trackKey }: UseHeroCarouselOptions
       controller.destroy();
       controllerRef.current = null;
     };
-  }, [loopEnabled, slideCount, trackKey]);
+  }, [autoplay, intervalMs, loopEnabled, slideCount, trackKey]);
 
   const goTo = useCallback((index: number) => {
     controllerRef.current?.goTo(index);
