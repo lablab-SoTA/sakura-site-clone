@@ -799,6 +799,54 @@ a {
   outline: none;
 }
 
+.player-container[data-controls-visible="false"] {
+  cursor: pointer;
+}
+
+.player-container[data-controls-visible="false"] video {
+  cursor: pointer;
+}
+
+.player-container[data-controls-visible="false"] video::-webkit-media-controls-enclosure,
+.player-container[data-controls-visible="false"] video::-webkit-media-controls,
+.player-container[data-controls-visible="false"] video::-webkit-media-controls-panel,
+.player-container[data-controls-visible="false"] video::-webkit-media-controls-overlay-play-button {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.player-container[data-controls-visible="false"] video::-moz-media-controls {
+  opacity: 0;
+}
+
+.player-gesture-layer {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  color: transparent;
+  cursor: pointer;
+  z-index: 3;
+  transition: opacity 0.2s ease;
+}
+
+.player-gesture-layer[data-active="false"] {
+  pointer-events: none;
+  opacity: 0;
+}
+
+.player-gesture-layer[data-active="true"] {
+  pointer-events: auto;
+  opacity: 0;
+}
+
+.player-gesture-layer:focus-visible {
+  outline: 2px solid var(--accent-strong);
+  outline-offset: 4px;
+}
+
 .player-overlay-button {
   position: absolute;
   top: 50%;
