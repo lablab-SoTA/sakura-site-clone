@@ -11,9 +11,10 @@ type NavItem = {
 
 type HeaderProps = {
   primaryNav: NavItem[];
+  actionNav?: NavItem[];
 };
 
-export default function Header({ primaryNav }: HeaderProps) {
+export default function Header({ primaryNav, actionNav = [] }: HeaderProps) {
   const [isCompact, setIsCompact] = useState(false);
 
   useEffect(() => {
@@ -41,13 +42,31 @@ export default function Header({ primaryNav }: HeaderProps) {
             priority
           />
         </Link>
-        {primaryNav.length > 0 && (
-          <nav className="layout__nav">
-            {primaryNav.map((item) => (
-              <Link key={item.label} href={item.href} className="layout__nav-item">
-                {item.label}
-              </Link>
-            ))}
+        {(primaryNav.length > 0 || actionNav.length > 0) && (
+          <nav className="layout__nav" aria-label="サイト内メインナビゲーション">
+            {primaryNav.length > 0 && (
+              <div className="layout__nav-group" role="list">
+                {primaryNav.map((item) => (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    className="layout__nav-item"
+                    role="listitem"
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            )}
+            {actionNav.length > 0 && (
+              <div className="layout__nav-actions" aria-label="クリエイター向けメニュー">
+                {actionNav.map((item) => (
+                  <Link key={item.label} href={item.href} className="layout__nav-action">
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            )}
           </nav>
         )}
       </div>
