@@ -3,6 +3,7 @@ import { Suspense } from "react";
 
 import AgeGateQueryReset from "@/components/AgeGateQueryReset";
 import Header from "@/components/Header";
+import FooterNav from "@/components/FooterNav";
 
 import "./globals.css";
 
@@ -60,6 +61,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <p>© {new Date().getFullYear()} xanime Studio. All rights reserved.</p>
           </footer>
         </div>
+        <FooterNav />
       </body>
     </html>
   );

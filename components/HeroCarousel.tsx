@@ -128,7 +128,7 @@ export default function HeroCarousel({ slides }: Readonly<HeroCarouselProps>) {
                         </p>
 
                         <Link
-                          href={`/watch/${item.anime.slug}?episode=${item.episode.id}`}
+                          href={`/videos/${item.episode.id}`}
                           className={styles.cta}
                           aria-label={`${item.anime.title} ${item.episode.title} を再生する`}
                           tabIndex={isActive ? 0 : -1}
