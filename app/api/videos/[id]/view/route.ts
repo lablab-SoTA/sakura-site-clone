@@ -2,13 +2,7 @@ import { NextResponse } from "next/server";
 
 import { createServiceRoleClient } from "@/lib/supabase/server";
 
-type ViewParams = {
-  params: {
-    id: string;
-  };
-};
-
-export async function POST(_request: Request, { params }: ViewParams) {
+export async function POST(_request: Request, { params }: { params: { id: string } }) {
   const videoId = params.id;
 
   if (!videoId) {

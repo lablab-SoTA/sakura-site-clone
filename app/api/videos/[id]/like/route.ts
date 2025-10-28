@@ -8,7 +8,7 @@ type LikeParams = {
   };
 };
 
-export async function POST(request: Request, { params }: LikeParams) {
+export async function POST(request: Request, { params }: { params: { id: string } }) {
   const user = await getUserFromRequest(request);
 
   if (!user) {
