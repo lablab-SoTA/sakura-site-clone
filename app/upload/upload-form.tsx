@@ -1,11 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 
 import { getBrowserSupabaseClient } from "@/lib/supabase/client";
 
-type UploadType = "single" | "new-series" | "existing-series";
+type UploadType = "new-series" | "existing-series";
 
 type SeriesOption = {
   id: string;
@@ -17,7 +24,7 @@ export default function UploadForm() {
   const [sessionUserId, setSessionUserId] = useState<string | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [seriesOptions, setSeriesOptions] = useState<SeriesOption[]>([]);
-  const [type, setType] = useState<UploadType>("single");
+  const [type, setType] = useState<UploadType>("new-series");
   const [seriesId, setSeriesId] = useState<string>("");
   const [newSeriesTitle, setNewSeriesTitle] = useState("");
   const [newSeriesDescription, setNewSeriesDescription] = useState("");
@@ -32,9 +39,13 @@ export default function UploadForm() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [isSessionResolved, setIsSessionResolved] = useState(false);
+  const [step, setStep] = useState<"details" | "confirm">("details");
+  const [hasPromptedVideo, setHasPromptedVideo] = useState(false);
   const [isPending, startTransition] = useTransition();
   const videoInputRef = useRef<HTMLInputElement>(null);
   const thumbnailInputRef = useRef<HTMLInputElement>(null);
+  const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
+  const [thumbnailPreviewUrl, setThumbnailPreviewUrl] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -93,6 +104,7 @@ export default function UploadForm() {
           setNewSeriesDescription("");
           setFile(null);
           setThumbnailFile(null);
+          setStep("details");
         }
       } finally {
         setIsSessionResolved(true);
@@ -129,58 +141,134 @@ export default function UploadForm() {
     loadSeries();
   }, [sessionUserId, supabase]);
 
-  const canSubmit = useMemo(() => {
-    if (!title || !file || !thumbnailFile || !noRepost || !mosaicConfirmed || !isAdult) {
-      return false;
+  useEffect(() => {
+    if (!sessionUserId || hasPromptedVideo) {
+      return;
     }
-
-    if (type === "existing-series" && !seriesId) {
-      return false;
+    // モバイルでページ遷移直後にファイル選択を促す
+    if (videoInputRef.current) {
+      videoInputRef.current.value = "";
+      videoInputRef.current.click();
+      setHasPromptedVideo(true);
     }
+  }, [hasPromptedVideo, sessionUserId]);
 
-    if (type === "new-series" && !newSeriesTitle) {
-      return false;
-    }
-
-    return true;
-  }, [file, isAdult, mosaicConfirmed, newSeriesTitle, noRepost, seriesId, thumbnailFile, title, type]);
-
-  if (!isSessionResolved) {
-    return (
-      <div className="auth-required" role="status">
-        <p className="auth-required__message">ログイン状態を確認しています...</p>
-      </div>
-    );
-  }
-
-  if (!sessionUserId) {
-    const redirectTo = encodeURIComponent("/upload");
-    return (
-      <div className="auth-required">
-        <p className="auth-required__message">動画をアップロードするにはログインが必要です。</p>
-        <div className="auth-required__actions">
-          <Link href={`/auth/login?redirectTo=${redirectTo}`} className="button">
-            ログイン
-          </Link>
-          <Link
-            href={`/auth/register?redirectTo=${redirectTo}`}
-            className="button button--ghost"
-          >
-            新規登録
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    if (!accessToken || !sessionUserId) {
-      setError("アップロードにはログインが必要です。");
+  useEffect(() => {
+    if (!file) {
+      setVideoPreviewUrl(null);
+      if (step === "confirm") {
+        setStep("details");
+      }
       return;
     }
 
+    const url = URL.createObjectURL(file);
+    setVideoPreviewUrl(url);
+
+    return () => {
+      URL.revokeObjectURL(url);
+    };
+  }, [file, step]);
+
+  useEffect(() => {
+    if (!thumbnailFile) {
+      setThumbnailPreviewUrl(null);
+      return;
+    }
+
+    const url = URL.createObjectURL(thumbnailFile);
+    setThumbnailPreviewUrl(url);
+
+    return () => {
+      URL.revokeObjectURL(url);
+    };
+  }, [thumbnailFile]);
+
+  const canProceed = useMemo(() => {
+    if (!file) {
+      return false;
+    }
+    if (!title.trim() || !thumbnailFile) {
+      return false;
+    }
+    if (type === "existing-series" && !seriesId) {
+      return false;
+    }
+    if (type === "new-series" && !newSeriesTitle.trim()) {
+      return false;
+    }
+    return true;
+  }, [file, thumbnailFile, title, type, seriesId, newSeriesTitle]);
+
+  const canPublish = useMemo(() => {
+    if (!canProceed) {
+      return false;
+    }
+    return noRepost && mosaicConfirmed && isAdult;
+  }, [canProceed, isAdult, mosaicConfirmed, noRepost]);
+
+  const openVideoPicker = useCallback(() => {
+    if (videoInputRef.current) {
+      videoInputRef.current.value = "";
+      videoInputRef.current.click();
+    }
+  }, []);
+
+  const openThumbnailPicker = useCallback(() => {
+    if (thumbnailInputRef.current) {
+      thumbnailInputRef.current.value = "";
+      thumbnailInputRef.current.click();
+    }
+  }, []);
+
+  const handleVideoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const nextFile = event.target.files?.[0] ?? null;
+    setFile(nextFile);
+    setError(null);
+    setMessage(null);
+    setStep("details");
+  };
+
+  const handleThumbnailChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const nextFile = event.target.files?.[0] ?? null;
+    setThumbnailFile(nextFile);
+    setError(null);
+  };
+
+  const handleSelectType = (nextType: UploadType) => {
+    setType(nextType);
+    setError(null);
+    if (nextType === "new-series") {
+      setSeriesId("");
+    } else {
+      setNewSeriesTitle("");
+      setNewSeriesDescription("");
+    }
+  };
+
+  const resetForm = useCallback(() => {
+    setTitle("");
+    setDescription("");
+    setTags("");
+    setFile(null);
+    setThumbnailFile(null);
+    setNoRepost(false);
+    setMosaicConfirmed(false);
+    setIsAdult(false);
+    setNewSeriesTitle("");
+    setNewSeriesDescription("");
+    setSeriesId("");
+    setType("new-series");
+    setStep("details");
+    if (videoInputRef.current) {
+      videoInputRef.current.value = "";
+    }
+    if (thumbnailInputRef.current) {
+      thumbnailInputRef.current.value = "";
+    }
+  }, []);
+
+  const publishVideo = useCallback(() => {
     if (!file) {
       setError("動画ファイルを選択してください。");
       return;
@@ -196,6 +284,27 @@ export default function UploadForm() {
 
     startTransition(async () => {
       try {
+        let activeAccessToken = accessToken;
+        let activeUserId = sessionUserId;
+
+        if (!activeAccessToken || !activeUserId) {
+          const { data, error: sessionError } = await supabase.auth.getSession();
+          if (sessionError) {
+            throw new Error("ログイン状態の再確認に失敗しました。時間をおいて再度お試しください。");
+          }
+
+          const refreshedSession = data.session ?? null;
+          activeAccessToken = refreshedSession?.access_token ?? null;
+          activeUserId = refreshedSession?.user?.id ?? null;
+
+          if (!activeAccessToken || !activeUserId) {
+            throw new Error("アップロードにはログインが必要です。再ログインしてください。");
+          }
+
+          setSessionUserId(activeUserId);
+          setAccessToken(activeAccessToken);
+        }
+
         let resolvedSeriesId: string | null = null;
         const storage = supabase.storage.from("video");
         const uploadedPaths: string[] = [];
@@ -209,7 +318,7 @@ export default function UploadForm() {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${accessToken}`,
+              Authorization: `Bearer ${activeAccessToken}`,
             },
             body: JSON.stringify({
               title: newSeriesTitle,
@@ -234,7 +343,7 @@ export default function UploadForm() {
         }
 
         const uploadId = crypto.randomUUID();
-        const videoPath = `${sessionUserId}/${uploadId}-${file.name}`;
+        const videoPath = `${activeUserId}/${uploadId}-${file.name}`;
         const { error: uploadError } = await storage.upload(videoPath, file, {
           cacheControl: "3600",
           upsert: false,
@@ -246,7 +355,7 @@ export default function UploadForm() {
 
         uploadedPaths.push(videoPath);
 
-        const thumbnailPath = `${sessionUserId}/thumbnails/${uploadId}-${thumbnailFile.name}`;
+        const thumbnailPath = `${activeUserId}/thumbnails/${uploadId}-${thumbnailFile.name}`;
         const { error: thumbnailError } = await storage.upload(thumbnailPath, thumbnailFile, {
           cacheControl: "3600",
           upsert: false,
@@ -271,7 +380,7 @@ export default function UploadForm() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${activeAccessToken}`,
           },
           body: JSON.stringify({
             type,
@@ -297,197 +406,351 @@ export default function UploadForm() {
         }
 
         setMessage("アップロードが完了しました。公開ページを確認してください。");
-        setTitle("");
-        setDescription("");
-        setTags("");
-        setFile(null);
-        setThumbnailFile(null);
-        setNoRepost(false);
-        setMosaicConfirmed(false);
-        setIsAdult(false);
-        setNewSeriesTitle("");
-        setNewSeriesDescription("");
-        setSeriesId("");
-        if (videoInputRef.current) {
-          videoInputRef.current.value = "";
-        }
-        if (thumbnailInputRef.current) {
-          thumbnailInputRef.current.value = "";
-        }
+        resetForm();
       } catch (uploadError) {
         const message =
           uploadError instanceof Error ? uploadError.message : "アップロードに失敗しました。";
         setError(message);
       }
     });
+  }, [
+    accessToken,
+    description,
+    file,
+    mosaicConfirmed,
+    newSeriesDescription,
+    newSeriesTitle,
+    noRepost,
+    resetForm,
+    seriesId,
+    sessionUserId,
+    supabase,
+    tags,
+    thumbnailFile,
+    title,
+    type,
+    isAdult,
+  ]);
+
+  const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (step === "details") {
+      if (!canProceed) {
+        setError("必須項目をすべて入力してください。");
+        return;
+      }
+      setError(null);
+      setStep("confirm");
+      return;
+    }
+
+    if (!canPublish) {
+      setError("公開前の注意事項すべてにチェックを入れてください。");
+      return;
+    }
+
+    publishVideo();
   };
 
-  return (
-    <form className="upload-form" onSubmit={handleSubmit}>
-      <fieldset className="upload-form__fieldset">
-        <legend>投稿タイプ</legend>
-        <label className="upload-form__radio">
-          <input
-            type="radio"
-            name="type"
-            value="single"
-            checked={type === "single"}
-            onChange={() => setType("single")}
-          />
-          <span>単発投稿</span>
-        </label>
-        <label className="upload-form__radio">
-          <input
-            type="radio"
-            name="type"
-            value="new-series"
-            checked={type === "new-series"}
-            onChange={() => setType("new-series")}
-          />
-          <span>シリーズを新規作成</span>
-        </label>
-        <label className="upload-form__radio">
-          <input
-            type="radio"
-            name="type"
-            value="existing-series"
-            checked={type === "existing-series"}
-            onChange={() => setType("existing-series")}
-          />
-          <span>既存シリーズに追加</span>
-        </label>
-      </fieldset>
+  const handleBackToDetails = () => {
+    setStep("details");
+    setError(null);
+  };
 
-      {type === "new-series" && (
-        <div className="upload-form__group">
-          <label className="upload-form__field">
-            <span>シリーズ名</span>
-            <input
-              type="text"
-              value={newSeriesTitle}
-              onChange={(event) => setNewSeriesTitle(event.target.value)}
-              required
-            />
-          </label>
-          <label className="upload-form__field">
-            <span>シリーズ説明（任意）</span>
-            <textarea
-              value={newSeriesDescription}
-              onChange={(event) => setNewSeriesDescription(event.target.value)}
-              rows={3}
-            />
-          </label>
-        </div>
-      )}
-
-      {type === "existing-series" && (
-        <div className="upload-form__group">
-          <label className="upload-form__field">
-            <span>シリーズを選択</span>
-            <select value={seriesId} onChange={(event) => setSeriesId(event.target.value)} required>
-              <option value="">選択してください</option>
-              {seriesOptions.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.title}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-      )}
-
-      <label className="upload-form__field">
-        <span>作品タイトル</span>
-        <input
-          type="text"
-          value={title}
-          onChange={(event) => setTitle(event.target.value)}
-          required
-        />
-      </label>
-
-      <label className="upload-form__field">
-        <span>説明（任意）</span>
-        <textarea
-          value={description}
-          onChange={(event) => setDescription(event.target.value)}
-          rows={4}
-        />
-      </label>
-
-      <label className="upload-form__field">
-        <span>タグ（カンマ区切り）</span>
-        <input
-          type="text"
-          value={tags}
-          onChange={(event) => setTags(event.target.value)}
-          placeholder="例: アクション, ファンタジー"
-        />
-      </label>
-
-      <label className="upload-form__field">
-        <span>動画ファイル（MP4推奨）</span>
-        <input
-          ref={videoInputRef}
-          type="file"
-          accept="video/mp4,video/*"
-          onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-          required
-        />
-      </label>
-
-      <label className="upload-form__field">
-        <span>サムネイル画像</span>
-        <input
-          ref={thumbnailInputRef}
-          type="file"
-          accept="image/png,image/jpeg,image/webp,image/gif"
-          onChange={(event) => setThumbnailFile(event.target.files?.[0] ?? null)}
-          required
-        />
-        <small className="upload-form__hint">推奨サイズ: 16:9 / 1280×720px 以上</small>
-      </label>
-
-      <div className="upload-form__checks">
-        <label className="upload-form__checkbox">
-          <input
-            type="checkbox"
-            checked={noRepost}
-            onChange={(event) => setNoRepost(event.target.checked)}
-            required
-          />
-          <span>私は転載禁止に同意します。</span>
-        </label>
-        <label className="upload-form__checkbox">
-          <input
-            type="checkbox"
-            checked={mosaicConfirmed}
-            onChange={(event) => setMosaicConfirmed(event.target.checked)}
-            required
-          />
-          <span>局部にはモザイクが入っています。</span>
-        </label>
-        <label className="upload-form__checkbox">
-          <input
-            type="checkbox"
-            checked={isAdult}
-            onChange={(event) => setIsAdult(event.target.checked)}
-            required
-          />
-          <span>この作品は18禁であり、私は18歳以上です。</span>
-        </label>
+  if (!isSessionResolved) {
+    return (
+      <div className="auth-required" role="status">
+        <p className="auth-required__message">ログイン状態を確認しています...</p>
       </div>
+    );
+  }
 
-      {error && (
-        <p className="upload-form__error" role="alert">
-          {error}
-        </p>
+  if (!sessionUserId) {
+    const redirectTo = encodeURIComponent("/upload");
+    return (
+      <div className="auth-required">
+        <p className="auth-required__message">動画をアップロードするにはログインが必要です。</p>
+        <div className="auth-required__actions">
+          <Link href={`/auth/login?redirectTo=${redirectTo}`} className="button">
+            ログイン
+          </Link>
+          <Link href={`/auth/register?redirectTo=${redirectTo}`} className="button button--ghost">
+            新規登録
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <form className="upload-form" onSubmit={handleFormSubmit}>
+      <input
+        ref={videoInputRef}
+        className="upload-form__hidden-input"
+        type="file"
+        accept="video/mp4,video/*"
+        onChange={handleVideoChange}
+      />
+      <input
+        ref={thumbnailInputRef}
+        className="upload-form__hidden-input"
+        type="file"
+        accept="image/png,image/jpeg,image/webp,image/gif"
+        onChange={handleThumbnailChange}
+      />
+
+      {!file ? (
+        <div className="upload-form__select">
+          {message && <p className="upload-form__message">{message}</p>}
+          <h2 className="upload-form__select-title">動画を選択してください</h2>
+          <p className="upload-form__select-description">
+            追加ボタンを押すとカメラロールが開きます。公開したい動画を選んで、詳細入力に進みましょう。
+          </p>
+          <button type="button" className="button" onClick={openVideoPicker}>
+            カメラロールを開く
+          </button>
+        </div>
+      ) : (
+        <div className="upload-form__content">
+          {message && <p className="upload-form__message">{message}</p>}
+
+          <section className="upload-form__video">
+            <div className="upload-form__video-preview">
+              {videoPreviewUrl ? (
+                <video
+                  src={videoPreviewUrl}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  className="upload-form__video-element"
+                />
+              ) : (
+                <div className="upload-form__video-fallback">プレビューを読み込めませんでした</div>
+              )}
+            </div>
+            <div className="upload-form__video-meta">
+              <p className="upload-form__video-name">{file.name}</p>
+              <button
+                type="button"
+                className="button button--ghost"
+                onClick={openVideoPicker}
+                disabled={isPending}
+              >
+                動画を選び直す
+              </button>
+            </div>
+          </section>
+
+          {step === "details" ? (
+            <div className="upload-form__details">
+              <label className="upload-form__field">
+                <span className="upload-form__field-label">タイトル</span>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(event) => setTitle(event.target.value)}
+                  placeholder="作品のタイトルを入力"
+                />
+              </label>
+
+              <div className="upload-form__thumbnail">
+                <span className="upload-form__field-label">サムネイル</span>
+                <div className="upload-form__thumbnail-preview" role="presentation">
+                  {thumbnailPreviewUrl ? (
+                    <img src={thumbnailPreviewUrl} alt="選択したサムネイル" />
+                  ) : (
+                    <div className="upload-form__thumbnail-empty">16:9 推奨（1280×720px 以上）</div>
+                  )}
+                </div>
+                <div className="upload-form__thumbnail-actions">
+                  <button
+                    type="button"
+                    className="button button--ghost"
+                    onClick={openThumbnailPicker}
+                    disabled={isPending}
+                  >
+                    サムネイルを選択
+                  </button>
+                </div>
+                <small className="upload-form__hint">推奨: 16:9 / 1280×720px 以上</small>
+              </div>
+
+              <div className="upload-form__scenarios">
+                <div
+                  className={`upload-form__scenario ${
+                    type === "new-series" ? "upload-form__scenario--active" : ""
+                  }`}
+                >
+                  <button
+                    type="button"
+                    className="upload-form__scenario-toggle"
+                    onClick={() => handleSelectType("new-series")}
+                    aria-pressed={type === "new-series"}
+                  >
+                    ＋ 新規エピソードを作成
+                  </button>
+                  {type === "new-series" && (
+                    <div className="upload-form__scenario-body">
+                      <label className="upload-form__field">
+                        <span className="upload-form__field-label">エピソード名</span>
+                        <input
+                          type="text"
+                          value={newSeriesTitle}
+                          onChange={(event) => setNewSeriesTitle(event.target.value)}
+                          placeholder="シリーズまたはエピソードの名前"
+                        />
+                      </label>
+                      <label className="upload-form__field">
+                        <span className="upload-form__field-label">説明（任意）</span>
+                        <textarea
+                          value={newSeriesDescription}
+                          onChange={(event) => setNewSeriesDescription(event.target.value)}
+                          rows={3}
+                          placeholder="視聴者に伝えたい概要を入力"
+                        />
+                      </label>
+                    </div>
+                  )}
+                </div>
+
+                <div
+                  className={`upload-form__scenario ${
+                    type === "existing-series" ? "upload-form__scenario--active" : ""
+                  }`}
+                >
+                  <button
+                    type="button"
+                    className="upload-form__scenario-toggle"
+                    onClick={() => handleSelectType("existing-series")}
+                    aria-pressed={type === "existing-series"}
+                  >
+                    既存のエピソードに追加
+                  </button>
+                  {type === "existing-series" && (
+                    <div className="upload-form__scenario-body">
+                      {seriesOptions.length > 0 ? (
+                        <label className="upload-form__field">
+                          <span className="upload-form__field-label">追加先を選択</span>
+                          <select
+                            value={seriesId}
+                            onChange={(event) => setSeriesId(event.target.value)}
+                          >
+                            <option value="">選択してください</option>
+                            {seriesOptions.map((option) => (
+                              <option key={option.id} value={option.id}>
+                                {option.title}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      ) : (
+                        <p className="upload-form__scenario-empty">
+                          まだエピソードがありません。まずは新規エピソードを作成してください。
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <label className="upload-form__field">
+                <span className="upload-form__field-label">説明</span>
+                <textarea
+                  value={description}
+                  onChange={(event) => setDescription(event.target.value)}
+                  rows={4}
+                  placeholder="視聴者に作品のポイントを伝えましょう"
+                />
+              </label>
+
+              <label className="upload-form__field">
+                <span className="upload-form__field-label">タグ（カンマ区切り）</span>
+                <input
+                  type="text"
+                  value={tags}
+                  onChange={(event) => setTags(event.target.value)}
+                  placeholder="例: アクション, ファンタジー"
+                />
+              </label>
+
+              {error && (
+                <p className="upload-form__error" role="alert">
+                  {error}
+                </p>
+              )}
+
+              <div className="upload-form__actions">
+                <button
+                  type="button"
+                  className="button button--ghost"
+                  onClick={openVideoPicker}
+                  disabled={isPending}
+                >
+                  動画を変更
+                </button>
+                <button type="submit" className="button" disabled={!canProceed || isPending}>
+                  進む
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="upload-form__confirm">
+              <h2 className="upload-form__section-title">公開前の注意事項</h2>
+              <p className="upload-form__section-description">
+                以下の項目すべてに同意すると「公開する」を押せます。
+              </p>
+              <div className="upload-form__checks">
+                <label className="upload-form__checkbox">
+                  <input
+                    type="checkbox"
+                    checked={noRepost}
+                    onChange={(event) => setNoRepost(event.target.checked)}
+                  />
+                  <span>私は転載禁止に同意します。</span>
+                </label>
+                <label className="upload-form__checkbox">
+                  <input
+                    type="checkbox"
+                    checked={mosaicConfirmed}
+                    onChange={(event) => setMosaicConfirmed(event.target.checked)}
+                  />
+                  <span>局部にはモザイクが入っています。</span>
+                </label>
+                <label className="upload-form__checkbox">
+                  <input
+                    type="checkbox"
+                    checked={isAdult}
+                    onChange={(event) => setIsAdult(event.target.checked)}
+                  />
+                  <span>この作品は18禁であり、私は18歳以上です。</span>
+                </label>
+              </div>
+
+              {error && (
+                <p className="upload-form__error" role="alert">
+                  {error}
+                </p>
+              )}
+
+              <div className="upload-form__actions upload-form__actions--confirm">
+                <button
+                  type="button"
+                  className="button button--ghost"
+                  onClick={handleBackToDetails}
+                  disabled={isPending}
+                >
+                  戻る
+                </button>
+                <button type="submit" className="button" disabled={!canPublish || isPending}>
+                  {isPending ? "公開処理中..." : "公開する"}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       )}
-      {message && <p className="upload-form__message">{message}</p>}
-
-      <button type="submit" className="button" disabled={!canSubmit || isPending}>
-        {isPending ? "アップロード中..." : "公開する"}
-      </button>
     </form>
   );
 }

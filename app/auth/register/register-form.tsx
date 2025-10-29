@@ -29,12 +29,16 @@ export default function RegisterForm() {
     setError(null);
     setMessage(null);
 
+    const siteUrl =
+      (typeof process !== "undefined" && process.env.NEXT_PUBLIC_SITE_URL) || window.location.origin;
+    const redirectUrl = `${siteUrl.replace(/\/$/, "")}/auth/login`;
+
     startTransition(async () => {
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: form.email,
         password: form.password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/login`,
+          emailRedirectTo: redirectUrl,
         },
       });
 

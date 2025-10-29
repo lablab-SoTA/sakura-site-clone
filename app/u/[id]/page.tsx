@@ -52,49 +52,86 @@ export default async function UserProfilePage({
     .order("created_at", { ascending: false })
     .returns<VideoRecord[]>();
 
+  const videoList = videos ?? [];
+  const videoCount = videoList.length;
+  const totalViews = videoList.reduce((acc, video) => acc + video.view_count, 0);
+  const totalLikes = videoList.reduce((acc, video) => acc + video.like_count, 0);
+  const latestPublishedAt = videoList[0]
+    ? new Intl.DateTimeFormat("ja-JP", { dateStyle: "medium" }).format(
+        new Date(videoList[0].created_at),
+      )
+    : null;
+  const socialLinks = [
+    profile.sns_x && { href: profile.sns_x, label: "X (Twitter)" },
+    profile.sns_instagram && { href: profile.sns_instagram, label: "Instagram" },
+    profile.sns_youtube && { href: profile.sns_youtube, label: "YouTube" },
+  ].filter((link): link is { href: string; label: string } => Boolean(link?.href));
+  const bioText = profile.bio?.trim() ?? "";
+  const hasBio = bioText.length > 0;
+
   return (
     <div className="creator-page">
-      <header className="creator-page__header">
-        <div className="creator-page__avatar" aria-hidden>
-          {profile.avatar_url ? (
-            <Image src={profile.avatar_url} alt="" fill sizes="96px" unoptimized />
-          ) : (
-            <span>{profile.display_name?.[0] ?? "?"}</span>
-          )}
+      <header className="creator-page__hero">
+        <div className="creator-page__hero-visual" aria-hidden>
+          <div className="creator-page__avatar">
+            {profile.avatar_url ? (
+              <Image src={profile.avatar_url} alt="" fill sizes="140px" unoptimized />
+            ) : (
+              <span>{profile.display_name?.[0] ?? "?"}</span>
+            )}
+          </div>
         </div>
-        <div>
+        <div className="creator-page__hero-body">
+          <span className="creator-page__kicker">CREATOR</span>
           <h1 className="creator-page__title">{profile.display_name ?? "匿名クリエイター"}</h1>
-          {profile.bio && <p className="creator-page__bio">{profile.bio}</p>}
-          <ul className="creator-page__links">
-            {profile.sns_x && (
-              <li>
-                <Link href={profile.sns_x} target="_blank" rel="noreferrer">
-                  X (Twitter)
-                </Link>
-              </li>
-            )}
-            {profile.sns_instagram && (
-              <li>
-                <Link href={profile.sns_instagram} target="_blank" rel="noreferrer">
-                  Instagram
-                </Link>
-              </li>
-            )}
-            {profile.sns_youtube && (
-              <li>
-                <Link href={profile.sns_youtube} target="_blank" rel="noreferrer">
-                  YouTube
-                </Link>
-              </li>
-            )}
+          {latestPublishedAt && (
+            <p className="creator-page__update">最終更新 {latestPublishedAt}</p>
+          )}
+          <p className={`creator-page__bio${hasBio ? "" : " creator-page__bio--empty"}`}>
+            {hasBio ? bioText : "プロフィール文はまだ設定されていません。"}
+          </p>
+          <ul className="creator-page__metrics" aria-label="クリエイターの公開状況">
+            <li className="creator-page__metric">
+              <span className="creator-page__metric-value">{videoCount.toLocaleString()}</span>
+              <span className="creator-page__metric-label">公開作品</span>
+            </li>
+            <li className="creator-page__metric">
+              <span className="creator-page__metric-value">{totalViews.toLocaleString()}</span>
+              <span className="creator-page__metric-label">総再生数</span>
+            </li>
+            <li className="creator-page__metric">
+              <span className="creator-page__metric-value">{totalLikes.toLocaleString()}</span>
+              <span className="creator-page__metric-label">総いいね</span>
+            </li>
           </ul>
+          {socialLinks.length > 0 && (
+            <ul className="creator-page__links">
+              {socialLinks.map((link) => (
+                <li key={link.href}>
+                  <Link href={link.href} target="_blank" rel="noreferrer">
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </header>
       <section className="creator-page__videos">
-        <h2>公開中の作品</h2>
-        {videos && videos.length > 0 ? (
+        <div className="creator-page__section-head">
+          <div>
+            <span className="creator-page__section-kicker">PORTFOLIO</span>
+            <h2 className="creator-page__section-title">公開中の作品</h2>
+          </div>
+          {videoCount > 0 && (
+            <p className="creator-page__section-lede">
+              {videoCount.toLocaleString()}件の作品が公開されています。
+            </p>
+          )}
+        </div>
+        {videoCount > 0 ? (
           <ul className="creator-page__grid">
-            {videos.map((video) => (
+            {videoList.map((video) => (
               <li key={video.id} className="creator-page__card">
                 <Link href={`/videos/${video.id}`}>
                   <div className="creator-page__thumb" aria-hidden>
@@ -110,8 +147,10 @@ export default async function UserProfilePage({
                       <div className="creator-page__thumb-placeholder">動画</div>
                     )}
                   </div>
-                  <h3>{video.title}</h3>
-                  <p>{video.view_count.toLocaleString()} 再生 • {video.like_count.toLocaleString()} いいね</p>
+                  <h3 className="creator-page__card-title">{video.title}</h3>
+                  <p className="creator-page__card-meta">
+                    {video.view_count.toLocaleString()} 再生・{video.like_count.toLocaleString()} いいね
+                  </p>
                 </Link>
               </li>
             ))}
