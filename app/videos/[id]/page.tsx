@@ -16,6 +16,8 @@ type VideoRecord = {
   public_url: string;
   like_count: number;
   view_count: number;
+  width: number | null;
+  height: number | null;
   created_at: string;
 };
 
@@ -44,7 +46,9 @@ export default async function VideoPage({
 
   const { data: video, error } = await supabase
     .from("videos")
-    .select("id, owner_id, series_id, title, description, tags, public_url, like_count, view_count, created_at")
+    .select(
+      "id, owner_id, series_id, title, description, tags, public_url, like_count, view_count, width, height, created_at",
+    )
     .eq("id", id)
     .single<VideoRecord>();
 
@@ -85,6 +89,9 @@ export default async function VideoPage({
           description={video.description}
           initialLikeCount={video.like_count}
           initialViewCount={video.view_count}
+          ownerId={video.owner_id}
+          width={video.width}
+          height={video.height}
           tags={tags ?? []}
         />
       </div>

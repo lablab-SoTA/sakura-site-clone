@@ -220,8 +220,10 @@
     display: flex;
     flex-direction: row;
     align-items: center;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     justify-content: flex-end;
+    row-gap: 4px;
+    text-align: right;
   }
 }
 
@@ -257,7 +259,8 @@
     gap: 6px; /* 変更: gapを小さく */
     font-size: clamp(10px, 2.5vw, 12px); /* 変更: フォントサイズを小さく */
     margin: 0; /* 追加 */
-    flex-wrap: nowrap; /* 追加 */
+    flex-wrap: wrap; /* 追加 */
+    justify-content: flex-end;
   }
 }
 
@@ -319,7 +322,9 @@
     font-size: clamp(11px, 2.8vw, 13px); /* 変更: さらに小さく */
     white-space: nowrap;
     flex-shrink: 0;
-    margin-left: 8px; /* 追加: 左マージン */
+    margin-left: 0; /* モバイルでの余白をgapに合わせて調整 */
+    margin-top: 2px;
+    align-self: flex-end;
   }
 }
 

@@ -3,8 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { usePathname, useRouter } from "next/navigation";
-
-import { getBrowserSupabaseClient } from "@/lib/supabase/client";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 type TouchNavBarProps = {
   variant: "header" | "footer";
@@ -49,14 +48,38 @@ const BASE_NAV_ITEMS: ReadonlyArray<NavItem> = [
 ];
 
 export default function TouchNavBar({ variant }: TouchNavBarProps) {
-  const supabase = getBrowserSupabaseClient();
   const router = useRouter();
   const pathname = usePathname();
   const navRef = useRef<HTMLDivElement>(null);
   const ignoreClickRef = useRef(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
 
   useEffect(() => {
+    let isActive = true;
+    const timeoutId = window.setTimeout(() => {
+      void import("@/lib/supabase/client")
+        .then(({ getBrowserSupabaseClient }) => {
+          if (!isActive) {
+            return;
+          }
+          setSupabase(getBrowserSupabaseClient());
+        })
+        .catch((error) => {
+          console.error("Supabase クライアントの読み込みに失敗しました", error);
+        });
+    }, 0);
+
+    return () => {
+      isActive = false;
+      window.clearTimeout(timeoutId);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!supabase) {
+      return;
+    }
     let isMounted = true;
 
     const resolveSession = async () => {

@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 
 import ProfileForm from "./profile-form";
@@ -63,6 +64,7 @@ const snsIcons: Record<"x" | "instagram" | "youtube", ReactNode> = {
 
 export default function ProfileDashboard() {
   const supabase = getBrowserSupabaseClient();
+  const router = useRouter();
   const [viewState, setViewState] = useState<ViewState>("loading");
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [publishedVideos, setPublishedVideos] = useState<VideoData[]>([]);
@@ -71,6 +73,8 @@ export default function ProfileDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ActiveTab>("published");
   const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState<string | null>(null);
 
   const loadData = useCallback(
     async (targetUserId: string) => {
@@ -170,6 +174,20 @@ export default function ProfileDashboard() {
     }
     await loadData(userId);
   };
+
+  const handleLogout = useCallback(async () => {
+    setLogoutError(null);
+    setIsLoggingOut(true);
+    const { error: signOutError } = await supabase.auth.signOut();
+    setIsLoggingOut(false);
+
+    if (signOutError) {
+      setLogoutError("ログアウトに失敗しました。時間をおいて再度お試しください。");
+      return;
+    }
+
+    router.replace("/auth/login");
+  }, [router, supabase]);
 
   const handleTabChange = (tab: ActiveTab) => {
     setActiveTab(tab);
@@ -309,6 +327,18 @@ export default function ProfileDashboard() {
               ))}
           </div>
         </div>
+      </section>
+
+      <section className="profile-dashboard__logout" aria-label="アカウント操作">
+        {logoutError && <p className="profile-dashboard__logout-error">{logoutError}</p>}
+        <button
+          type="button"
+          className="button button--ghost profile-dashboard__logout-button"
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+        >
+          {isLoggingOut ? "ログアウト中..." : "ログアウト"}
+        </button>
       </section>
 
       {isEditorOpen && (
