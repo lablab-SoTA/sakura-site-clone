@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -70,6 +71,10 @@ export default async function VideoPage({
     .map((tag) => tag.trim())
     .filter((tag) => tag.length > 0);
 
+  const rawDisplayName = profile?.display_name?.trim();
+  const authorDisplayName = rawDisplayName && rawDisplayName.length > 0 ? rawDisplayName : "匿名クリエイター";
+  const authorInitial = authorDisplayName.charAt(0).toUpperCase() || "？";
+
   return (
     <div className="video-page">
       <div className="video-page__player">
@@ -86,9 +91,20 @@ export default async function VideoPage({
       <aside className="video-page__meta">
         <div className="video-page__author">
           <h2>投稿者</h2>
-          <p className="video-page__author-name">
-            {profile?.display_name ?? "匿名クリエイター"}
-          </p>
+          <Link
+            href={`/u/${video.owner_id}`}
+            className="video-page__author-header"
+            aria-label="投稿者のプロフィールページへ"
+          >
+            <span className="video-page__author-avatar">
+              {profile?.avatar_url ? (
+                <Image src={profile.avatar_url} alt="" fill sizes="56px" />
+              ) : (
+                <span>{authorInitial}</span>
+              )}
+            </span>
+            <span className="video-page__author-name">{authorDisplayName}</span>
+          </Link>
           {profile?.bio && <p className="video-page__author-bio">{profile.bio}</p>}
           <ul className="video-page__author-links">
             {profile?.sns_x && (

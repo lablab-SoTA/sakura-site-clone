@@ -1,11 +1,13 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { getBrowserSupabaseClient } from "@/lib/supabase/client";
 
 type ProfileState = {
+  avatar_url: string;
   display_name: string;
   bio: string;
   sns_x: string;
@@ -14,6 +16,7 @@ type ProfileState = {
 };
 
 const INITIAL_STATE: ProfileState = {
+  avatar_url: "",
   display_name: "",
   bio: "",
   sns_x: "",
@@ -21,7 +24,11 @@ const INITIAL_STATE: ProfileState = {
   sns_youtube: "",
 };
 
-export default function ProfileForm() {
+type ProfileFormProps = {
+  onSaved?: () => void;
+};
+
+export default function ProfileForm({ onSaved }: ProfileFormProps) {
   const supabase = getBrowserSupabaseClient();
   const [form, setForm] = useState<ProfileState>(INITIAL_STATE);
   const [userId, setUserId] = useState<string | null>(null);
@@ -29,6 +36,9 @@ export default function ProfileForm() {
   const [error, setError] = useState<string | null>(null);
   const [isSessionResolved, setIsSessionResolved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -36,7 +46,7 @@ export default function ProfileForm() {
     const loadProfile = async (targetUserId: string) => {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("display_name, bio, sns_x, sns_instagram, sns_youtube")
+        .select("avatar_url, display_name, bio, sns_x, sns_instagram, sns_youtube")
         .eq("user_id", targetUserId)
         .maybeSingle();
 
@@ -46,14 +56,17 @@ export default function ProfileForm() {
 
       if (profile) {
         setForm({
+          avatar_url: profile.avatar_url ?? "",
           display_name: profile.display_name ?? "",
           bio: profile.bio ?? "",
           sns_x: profile.sns_x ?? "",
           sns_instagram: profile.sns_instagram ?? "",
           sns_youtube: profile.sns_youtube ?? "",
         });
+        setAvatarPreview(profile.avatar_url ?? null);
       } else {
         setForm(INITIAL_STATE);
+        setAvatarPreview(null);
       }
     };
 
@@ -68,6 +81,8 @@ export default function ProfileForm() {
           console.error("セッションの取得に失敗しました", sessionError);
           setUserId(null);
           setForm(INITIAL_STATE);
+          setAvatarPreview(null);
+          setAvatarFile(null);
           setMessage(null);
           setError("ログイン状態の確認に失敗しました。再度お試しください。");
           return;
@@ -76,6 +91,8 @@ export default function ProfileForm() {
         if (!data.session) {
           setUserId(null);
           setForm(INITIAL_STATE);
+          setAvatarPreview(null);
+          setAvatarFile(null);
           setMessage(null);
           setError(null);
           return;
@@ -91,6 +108,8 @@ export default function ProfileForm() {
         }
         setUserId(null);
         setForm(INITIAL_STATE);
+        setAvatarPreview(null);
+        setAvatarFile(null);
         setMessage(null);
         setError("ログイン状態の確認に失敗しました。時間をおいて再度お試しください。");
       } finally {
@@ -111,6 +130,8 @@ export default function ProfileForm() {
         if (!session) {
           setUserId(null);
           setForm(INITIAL_STATE);
+          setAvatarPreview(null);
+          setAvatarFile(null);
           setMessage(null);
           setError(null);
           return;
@@ -126,6 +147,8 @@ export default function ProfileForm() {
         }
         setUserId(null);
         setForm(INITIAL_STATE);
+        setAvatarPreview(null);
+        setAvatarFile(null);
         setMessage(null);
         setError("ログイン状態の確認に失敗しました。再度お試しください。");
       } finally {
@@ -148,6 +171,26 @@ export default function ProfileForm() {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleAvatarButtonClick = () => {
+    avatarInputRef.current?.click();
+  };
+
+  const handleAvatarFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    setAvatarFile(file);
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setAvatarPreview(typeof reader.result === "string" ? reader.result : null);
+    };
+    reader.readAsDataURL(file);
+    event.target.value = "";
+  };
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -161,8 +204,32 @@ export default function ProfileForm() {
     setMessage(null);
 
     try {
+      let resolvedAvatarUrl = form.avatar_url || null;
+
+      if (avatarFile) {
+        const extension = avatarFile.name.split(".").pop() ?? "jpg";
+        const filePath = `avatars/${userId}/${Date.now()}.${extension}`;
+        const { error: uploadError } = await supabase.storage
+          .from("avatars")
+          .upload(filePath, avatarFile, {
+            cacheControl: "3600",
+            upsert: true,
+            contentType: avatarFile.type,
+          });
+
+        if (uploadError) {
+          console.error("アバター画像のアップロードに失敗しました", uploadError);
+          setError("アバター画像のアップロードに失敗しました。時間をおいて再度お試しください。");
+          return;
+        }
+
+        const { data: publicUrlData } = await supabase.storage.from("avatars").getPublicUrl(filePath);
+        resolvedAvatarUrl = publicUrlData.publicUrl;
+      }
+
       const { error: upsertError } = await supabase.from("profiles").upsert({
         user_id: userId,
+        avatar_url: resolvedAvatarUrl,
         display_name: form.display_name || null,
         bio: form.bio || null,
         sns_x: form.sns_x || null,
@@ -176,7 +243,14 @@ export default function ProfileForm() {
         return;
       }
 
+      setForm((prev) => ({
+        ...prev,
+        avatar_url: resolvedAvatarUrl ?? "",
+      }));
+      setAvatarFile(null);
+      setAvatarPreview(resolvedAvatarUrl ?? null);
       setMessage("プロフィールを保存しました。");
+      onSaved?.();
     } catch (unknownError) {
       console.error("プロフィールの保存処理でエラーが発生しました", unknownError);
       setError("プロフィールの保存に失敗しました。時間をおいて再度お試しください。");
@@ -215,6 +289,23 @@ export default function ProfileForm() {
 
   return (
     <form className="profile-form" onSubmit={handleSubmit}>
+      <div className="profile-form__avatar">
+        <button type="button" className="profile-form__avatar-button" onClick={handleAvatarButtonClick}>
+          {avatarPreview ? (
+            <Image src={avatarPreview} alt="アバター画像" fill sizes="96px" />
+          ) : (
+            <span className="profile-form__avatar-placeholder">画像を選択</span>
+          )}
+        </button>
+        <input
+          ref={avatarInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleAvatarFileChange}
+          className="profile-form__avatar-input"
+        />
+        <p className="profile-form__avatar-note">画像をタップして変更できます</p>
+      </div>
       <label className="profile-form__field">
         <span>表示名</span>
         <input
