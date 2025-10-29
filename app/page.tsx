@@ -1,6 +1,8 @@
 import { fetchAnimeList } from "@/lib/anime";
 import MainSection from "@/components/feature/MainSection";
 
+export const revalidate = 60;
+
 export default async function HomePage() {
   const animeList = await fetchAnimeList();
   const episodes = animeList.flatMap((anime) =>
