@@ -28,6 +28,8 @@ type ProfileFormProps = {
   onSaved?: () => void;
 };
 
+const AVATAR_BUCKET = process.env.NEXT_PUBLIC_SUPABASE_AVATAR_BUCKET ?? "avatars";
+
 export default function ProfileForm({ onSaved }: ProfileFormProps) {
   const supabase = getBrowserSupabaseClient();
   const [form, setForm] = useState<ProfileState>(INITIAL_STATE);
@@ -208,22 +210,30 @@ export default function ProfileForm({ onSaved }: ProfileFormProps) {
 
       if (avatarFile) {
         const extension = avatarFile.name.split(".").pop() ?? "jpg";
-        const filePath = `avatars/${userId}/${Date.now()}.${extension}`;
+        const filePath = `${userId}/${Date.now()}.${extension}`;
+        console.log("アバターアップロード直前", {
+          bucket: AVATAR_BUCKET,
+          userId,
+          fileName: avatarFile.name,
+        });
         const { error: uploadError } = await supabase.storage
-          .from("avatars")
+          .from(AVATAR_BUCKET)
           .upload(filePath, avatarFile, {
             cacheControl: "3600",
-            upsert: true,
             contentType: avatarFile.type,
           });
 
         if (uploadError) {
           console.error("アバター画像のアップロードに失敗しました", uploadError);
-          setError("アバター画像のアップロードに失敗しました。時間をおいて再度お試しください。");
+          if (uploadError.message.includes("Bucket not found")) {
+            setError(`アバター用ストレージバケット「${AVATAR_BUCKET}」が見つかりません。Supabase の Storage でバケットを作成し、適切な権限を付与してください。`);
+          } else {
+            setError("アバター画像のアップロードに失敗しました。時間をおいて再度お試しください。");
+          }
           return;
         }
 
-        const { data: publicUrlData } = await supabase.storage.from("avatars").getPublicUrl(filePath);
+        const { data: publicUrlData } = await supabase.storage.from(AVATAR_BUCKET).getPublicUrl(filePath);
         resolvedAvatarUrl = publicUrlData.publicUrl;
       }
 
