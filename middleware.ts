@@ -37,7 +37,11 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (pathname === AGE_GATE_PATH) {
+  if (
+    pathname === AGE_GATE_PATH ||
+    pathname.startsWith("/auth") ||
+    pathname.startsWith("/terms")
+  ) {
     return NextResponse.next();
   }
 

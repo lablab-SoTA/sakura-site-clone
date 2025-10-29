@@ -32,7 +32,7 @@ export default function MainSection({ heroSlides, featuredEpisodes, contentEpiso
       return (
         <Link
           key={`${anime.slug}-${episode.id}-${keySuffix}`}
-          href={`/watch/${anime.slug}?episode=${episode.id}`}
+          href={`/videos/${episode.id}`}
           className={styles.episodeCard}
           aria-label={`${anime.title} ${episode.title} を再生する`}
         >
