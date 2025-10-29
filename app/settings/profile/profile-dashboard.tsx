@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import ProfileForm from "./profile-form";
 import { getBrowserSupabaseClient } from "@/lib/supabase/client";
@@ -34,7 +34,7 @@ type LikeRow = {
 type ViewState = "loading" | "signedOut" | "ready";
 type ActiveTab = "published" | "liked";
 
-const snsIcons: Record<"x" | "instagram" | "youtube", JSX.Element> = {
+const snsIcons: Record<"x" | "instagram" | "youtube", ReactNode> = {
   x: (
     <svg viewBox="0 0 24 24" aria-hidden width="20" height="20">
       <path
