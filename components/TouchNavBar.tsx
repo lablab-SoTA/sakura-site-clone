@@ -4,12 +4,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
+import { getBrowserSupabaseClient } from "@/lib/supabase/client";
+
 type TouchNavBarProps = {
   variant: "header" | "footer";
 };
 
+type NavKey = "home" | "upload" | "account";
+
 type NavItem = {
-  key: "home" | "upload" | "account";
+  key: NavKey;
   label: string;
   href: string;
   match: (path: string) => boolean;
@@ -22,7 +26,7 @@ type Rect = {
   top: number;
 };
 
-const NAV_ITEMS: NavItem[] = [
+const BASE_NAV_ITEMS: ReadonlyArray<NavItem> = [
   {
     key: "home",
     label: "ホーム",
@@ -45,15 +49,75 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 export default function TouchNavBar({ variant }: TouchNavBarProps) {
+  const supabase = getBrowserSupabaseClient();
   const router = useRouter();
   const pathname = usePathname();
   const navRef = useRef<HTMLDivElement>(null);
   const ignoreClickRef = useRef(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const resolveSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!isMounted) {
+        return;
+      }
+      setIsAuthenticated(Boolean(data.session));
+    };
+
+    resolveSession();
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(Boolean(session));
+    });
+
+    return () => {
+      isMounted = false;
+      listener.subscription.unsubscribe();
+    };
+  }, [supabase]);
+
+  const navItems = useMemo<NavItem[]>(() => {
+    return BASE_NAV_ITEMS.map((item) => {
+      if (item.key === "upload") {
+        if (isAuthenticated === false) {
+          return {
+            ...item,
+            href: `/auth/login?redirectTo=${encodeURIComponent("/upload")}`,
+          };
+        }
+        return { ...item };
+      }
+
+      if (item.key === "account") {
+        if (isAuthenticated) {
+          return {
+            ...item,
+            label: "マイページ",
+            href: "/settings/profile",
+          };
+        }
+
+        if (isAuthenticated === false) {
+          return {
+            ...item,
+            label: "ログイン",
+            href: `/auth/login?redirectTo=${encodeURIComponent("/settings/profile")}`,
+          };
+        }
+        return { ...item };
+      }
+
+      return { ...item };
+    });
+  }, [isAuthenticated]);
 
   const activeIndex = useMemo(() => {
-    const foundIndex = NAV_ITEMS.findIndex((item) => item.match(pathname));
+    const foundIndex = navItems.findIndex((item) => item.match(pathname));
     return foundIndex === -1 ? 0 : foundIndex;
-  }, [pathname]);
+  }, [navItems, pathname]);
 
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [pressRect, setPressRect] = useState<Rect | null>(null);
@@ -121,7 +185,7 @@ export default function TouchNavBar({ variant }: TouchNavBarProps) {
     }
     const rect = getRectForIndex(activeIndex);
     setActiveRect(rect);
-  }, [activeIndex, getRectForIndex, isPressing, pathname]);
+  }, [activeIndex, getRectForIndex, isPressing, navItems, pathname]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -135,13 +199,17 @@ export default function TouchNavBar({ variant }: TouchNavBarProps) {
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, [activeIndex, getRectForIndex, isPressing]);
+  }, [activeIndex, getRectForIndex, isPressing, navItems]);
 
   const completeNavigation = useCallback(
     (index: number) => {
-      router.push(NAV_ITEMS[index].href);
+      const target = navItems[index];
+      if (!target) {
+        return;
+      }
+      router.push(target.href);
     },
-    [router],
+    [navItems, router],
   );
 
   const resetInteraction = useCallback(() => {
@@ -243,7 +311,7 @@ export default function TouchNavBar({ variant }: TouchNavBarProps) {
         />
       )}
 
-      {NAV_ITEMS.map((item, index) => {
+      {navItems.map((item, index) => {
         const isActive = activeIndex === index;
         const isPreview = visualIndex === index && isPressing;
         return (
