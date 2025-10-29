@@ -44,7 +44,17 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-const primaryNav: Array<{ href: string; label: string }> = [];
+const primaryNav: Array<{ href: string; label: string }> = [
+  { href: "/#popular-episodes-heading", label: "人気作品" },
+  { href: "/#all-content-heading", label: "作品一覧" },
+  { href: "/#viewer-info", label: "視聴ガイド" },
+];
+
+const actionNav: Array<{ href: string; label: string }> = [
+  { href: "/creator", label: "クリエイターの方へ" },
+  { href: "/login", label: "クリエイターログイン" },
+  { href: "/register", label: "アカウント登録" },
+];
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -54,7 +64,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <AgeGateQueryReset />
         </Suspense>
         <div className="layout">
-          <Header primaryNav={primaryNav} />
+          <Header primaryNav={primaryNav} actionNav={actionNav} />
           <main className="layout__main">{children}</main>
           <footer className="layout__footer">
             <p>© {new Date().getFullYear()} xanime Studio. All rights reserved.</p>
