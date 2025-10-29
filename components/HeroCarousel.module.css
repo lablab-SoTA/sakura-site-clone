@@ -420,8 +420,8 @@
 
 @media (max-width: 640px) {
   .root {
-    --hero-padding-block: clamp(36px, 12vw, 54px);
-    padding-inline: clamp(8px, 4vw, 16px);
+    --hero-padding-block: clamp(32px, 12vw, 54px);
+    padding-inline: clamp(6px, 4vw, 12px);
     justify-items: stretch;
   }
 
