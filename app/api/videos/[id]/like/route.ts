@@ -2,20 +2,16 @@ import { NextResponse } from "next/server";
 
 import { createServiceRoleClient, getUserFromRequest } from "@/lib/supabase/server";
 
-type LikeParams = {
-  params: {
-    id: string;
-  };
-};
-
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(
+  request: Request,
+  context: { params: Promise<{ id: string }> },
+) {
+  const { id: videoId } = await context.params;
   const user = await getUserFromRequest(request);
 
   if (!user) {
     return NextResponse.json({ message: "認証が必要です。" }, { status: 401 });
   }
-
-  const videoId = params.id;
 
   if (!videoId) {
     return NextResponse.json({ message: "動画IDが不正です。" }, { status: 400 });

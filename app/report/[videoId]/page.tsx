@@ -4,10 +4,6 @@ import { createServiceRoleClient } from "@/lib/supabase/server";
 
 import ReportForm from "./report-form";
 
-type ReportPageProps = {
-  params: { videoId: string };
-};
-
 type VideoRecord = {
   id: string;
   title: string;
@@ -17,12 +13,17 @@ export const metadata = {
   title: "通報フォーム | xanime",
 };
 
-export default async function ReportPage({ params }: ReportPageProps) {
+export default async function ReportPage({
+  params,
+}: {
+  params: Promise<{ videoId: string }>;
+}) {
+  const { videoId } = await params;
   const supabase = createServiceRoleClient();
   const { data: video } = await supabase
     .from("videos")
     .select("id, title")
-    .eq("id", params.videoId)
+    .eq("id", videoId)
     .maybeSingle<VideoRecord>();
 
   if (!video) {

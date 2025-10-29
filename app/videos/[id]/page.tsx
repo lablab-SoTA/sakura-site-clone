@@ -5,10 +5,6 @@ import { createServiceRoleClient } from "@/lib/supabase/server";
 
 import VideoWatch from "./video-watch";
 
-type VideoPageProps = {
-  params: { id: string };
-};
-
 type VideoRecord = {
   id: string;
   owner_id: string;
@@ -37,8 +33,12 @@ type SeriesRecord = {
   title: string;
 };
 
-export default async function VideoPage({ params }: VideoPageProps) {
-  const { id } = params;
+export default async function VideoPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
   const supabase = createServiceRoleClient();
 
   const { data: video, error } = await supabase

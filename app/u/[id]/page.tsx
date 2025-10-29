@@ -4,10 +4,6 @@ import { notFound } from "next/navigation";
 
 import { createServiceRoleClient } from "@/lib/supabase/server";
 
-type UserProfileProps = {
-  params: { id: string };
-};
-
 type ProfileRecord = {
   user_id: string;
   display_name: string | null;
@@ -32,12 +28,17 @@ export const metadata = {
   title: "クリエイターページ | xanime",
 };
 
-export default async function UserProfilePage({ params }: UserProfileProps) {
+export default async function UserProfilePage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
   const supabase = createServiceRoleClient();
   const { data: profile } = await supabase
     .from("profiles")
     .select("user_id, display_name, bio, avatar_url, sns_x, sns_instagram, sns_youtube")
-    .eq("user_id", params.id)
+    .eq("user_id", id)
     .maybeSingle<ProfileRecord>();
 
   if (!profile) {
@@ -47,7 +48,7 @@ export default async function UserProfilePage({ params }: UserProfileProps) {
   const { data: videos } = await supabase
     .from("videos")
     .select("id, title, public_url, thumbnail_url, like_count, view_count, created_at")
-    .eq("owner_id", params.id)
+    .eq("owner_id", id)
     .order("created_at", { ascending: false })
     .returns<VideoRecord[]>();
 

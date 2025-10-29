@@ -2,8 +2,11 @@ import { NextResponse } from "next/server";
 
 import { createServiceRoleClient } from "@/lib/supabase/server";
 
-export async function POST(_request: Request, { params }: { params: { id: string } }) {
-  const videoId = params.id;
+export async function POST(
+  _request: Request,
+  context: { params: Promise<{ id: string }> },
+) {
+  const { id: videoId } = await context.params;
 
   if (!videoId) {
     return NextResponse.json({ message: "動画IDが不正です。" }, { status: 400 });

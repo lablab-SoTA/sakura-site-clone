@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+
 import LoginForm from "./login-form";
 
 export const metadata = {
@@ -10,7 +12,9 @@ export default function LoginPage() {
       <div className="auth__panel">
         <h1 className="auth__title">ログイン</h1>
         <p className="auth__lead">登録済みのメールアドレスとパスワードでログインします。</p>
-        <LoginForm />
+        <Suspense fallback={null}>
+          <LoginForm />
+        </Suspense>
       </div>
     </div>
   );
