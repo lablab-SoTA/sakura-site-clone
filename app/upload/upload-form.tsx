@@ -502,7 +502,7 @@ export default function UploadForm() {
 
       {!file ? (
         <div className="upload-form__select">
-          {message && <p className="upload-form__message">{message}</p>}
+          {message && <p className="upload-form__message message-banner message-banner--success">{message}</p>}
           <h2 className="upload-form__select-title">動画を選択してください</h2>
           <p className="upload-form__select-description">
             追加ボタンを押すとカメラロールが開きます。公開したい動画を選んで、詳細入力に進みましょう。
@@ -513,7 +513,7 @@ export default function UploadForm() {
         </div>
       ) : (
         <div className="upload-form__content">
-          {message && <p className="upload-form__message">{message}</p>}
+          {message && <p className="upload-form__message message-banner message-banner--success">{message}</p>}
 
           <section className="upload-form__video">
             <div className="upload-form__video-preview">

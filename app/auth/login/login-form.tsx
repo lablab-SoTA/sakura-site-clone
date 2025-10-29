@@ -78,8 +78,11 @@ export default function LoginForm() {
       <button type="submit" className="button" disabled={disableSubmit}>
         {isPending ? "ログイン中..." : "ログイン"}
       </button>
-      <p className="auth-form__hint">
-        アカウントをお持ちでない場合は <Link href="/auth/register">新規登録</Link>
+      <p className="auth-form__hint auth-form__hint--highlight" role="note">
+        <span className="auth-form__hint-text">アカウントをお持ちでない場合は</span>
+        <Link href="/auth/register" className="auth-form__hint-link">
+          新規登録
+        </Link>
       </p>
     </form>
   );

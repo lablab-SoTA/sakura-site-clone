@@ -53,6 +53,7 @@ export default function VideoWatch({
   const [viewCount, setViewCount] = useState(initialViewCount);
   const [message, setMessage] = useState<string | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [isTogglingLike, setIsTogglingLike] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -61,7 +62,7 @@ export default function VideoWatch({
       const { data } = await supabase.auth.getSession();
       if (data.session) {
         setAccessToken(data.session.access_token);
-         setIsOwner(data.session.user.id === ownerId);
+        setIsOwner(data.session.user.id === ownerId);
         const { data: liked } = await supabase
           .from("likes")
           .select("video_id")
@@ -109,23 +110,45 @@ export default function VideoWatch({
       return;
     }
 
-    const response = await fetch(`/api/videos/${videoId}/like`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
-
-    if (!response.ok) {
-      setMessage("いいねの切り替えに失敗しました。");
+    if (likeState === "unknown" || isTogglingLike) {
       return;
     }
 
-    const payload = (await response.json()) as LikeResponse;
-    setLikeCount(payload.likeCount);
-    setLikeState(payload.liked ? "liked" : "unliked");
-    setMessage(null);
-  }, [accessToken, videoId]);
+    const currentState = likeState;
+    const currentCount = likeCount;
+    const nextState = likeState === "liked" ? "unliked" : "liked";
+    const delta = nextState === "liked" ? 1 : -1;
+
+    setIsTogglingLike(true);
+    try {
+      // レスポンスを待つ間も操作感を損ねないように楽観的に更新する
+      setLikeState(nextState);
+      setLikeCount((prev) => Math.max(0, prev + delta));
+      setMessage(null);
+
+      const response = await fetch(`/api/videos/${videoId}/like`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("failed");
+      }
+
+      const payload = (await response.json()) as LikeResponse;
+      setLikeCount(payload.likeCount);
+      setLikeState(payload.liked ? "liked" : "unliked");
+      setMessage(null);
+    } catch {
+      setLikeState(currentState);
+      setLikeCount(currentCount);
+      setMessage("いいねの切り替えに失敗しました。");
+    } finally {
+      setIsTogglingLike(false);
+    }
+  }, [accessToken, isTogglingLike, likeCount, likeState, videoId]);
 
   const handlePlay = useCallback(async () => {
     const storageKey = `xanime_view_${videoId}`;
@@ -239,6 +262,7 @@ export default function VideoWatch({
             type="button"
             className={`video-watch__like button ${likeState === "liked" ? "video-watch__like--active" : ""}`}
             onClick={handleToggleLike}
+            disabled={likeState === "unknown" || isTogglingLike}
           >
             {likeLabel}
           </button>
