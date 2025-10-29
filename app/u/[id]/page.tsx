@@ -62,10 +62,10 @@ export default async function UserProfilePage({
       )
     : null;
   const socialLinks = [
-    profile.sns_x && { href: profile.sns_x, label: "X (Twitter)" },
-    profile.sns_instagram && { href: profile.sns_instagram, label: "Instagram" },
-    profile.sns_youtube && { href: profile.sns_youtube, label: "YouTube" },
-  ].filter((link): link is { href: string; label: string } => Boolean(link?.href));
+    profile.sns_x?.trim() ? { href: profile.sns_x.trim(), label: "X (Twitter)" } : null,
+    profile.sns_instagram?.trim() ? { href: profile.sns_instagram.trim(), label: "Instagram" } : null,
+    profile.sns_youtube?.trim() ? { href: profile.sns_youtube.trim(), label: "YouTube" } : null,
+  ].filter((link): link is { href: string; label: string } => Boolean(link));
   const bioText = profile.bio?.trim() ?? "";
   const hasBio = bioText.length > 0;
 

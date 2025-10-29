@@ -36,6 +36,15 @@ type SeriesRecord = {
   title: string;
 };
 
+type SeriesEpisodeRecord = {
+  id: string;
+  title: string;
+  thumbnail_url: string | null;
+  view_count: number;
+  like_count: number;
+  created_at: string;
+};
+
 export default async function VideoPage({
   params,
 }: {
@@ -70,6 +79,25 @@ export default async function VideoPage({
         .maybeSingle<SeriesRecord>()
     : { data: null };
 
+  const { data: seriesEpisodeRows } = video.series_id
+    ? await supabase
+        .from("videos")
+        .select("id, title, thumbnail_url, view_count, like_count, created_at")
+        .eq("series_id", video.series_id)
+        .eq("visibility", "PUBLIC")
+        .eq("status", "PUBLISHED")
+        .order("created_at", { ascending: true })
+        .returns<SeriesEpisodeRecord[]>()
+    : { data: [] as SeriesEpisodeRecord[] };
+
+  const seriesEpisodes = (seriesEpisodeRows ?? []).map((episode, index) => ({
+    ...episode,
+    episodeNumber: index + 1,
+    isCurrent: episode.id === video.id,
+  }));
+  const currentEpisode = seriesEpisodes.find((episode) => episode.isCurrent);
+  const totalEpisodes = seriesEpisodes.length;
+
   const tags = video.tags
     ?.split(",")
     .map((tag) => tag.trim())
@@ -93,7 +121,50 @@ export default async function VideoPage({
           width={video.width}
           height={video.height}
           tags={tags ?? []}
+          episodeNumber={currentEpisode?.episodeNumber}
+          episodeCount={totalEpisodes > 0 ? totalEpisodes : undefined}
         />
+        {totalEpisodes > 0 && (
+          <section className="video-page__episodes" aria-label="シリーズのエピソード一覧">
+            <header className="video-page__episodes-header">
+              <span className="video-page__episodes-kicker">EPISODES</span>
+              <h2 className="video-page__episodes-title">{series?.title ?? "エピソード"}</h2>
+              <p className="video-page__episodes-lede">
+                全{totalEpisodes.toLocaleString()}話中の第{(currentEpisode?.episodeNumber ?? 1).toLocaleString()}話を再生中
+              </p>
+            </header>
+            <ol className="video-page__episode-list">
+              {seriesEpisodes.map((episode) => (
+                <li
+                  key={episode.id}
+                  className={`video-page__episode-item${episode.isCurrent ? " video-page__episode-item--active" : ""}`}
+                >
+                  {episode.isCurrent ? (
+                    <span className="video-page__episode-link video-page__episode-link--active" aria-current="true">
+                      <span className="video-page__episode-number">
+                        第{episode.episodeNumber.toLocaleString()}話
+                      </span>
+                      <span className="video-page__episode-title">{episode.title}</span>
+                      <span className="video-page__episode-stats">
+                        {episode.view_count.toLocaleString()} 再生・{episode.like_count.toLocaleString()} いいね
+                      </span>
+                    </span>
+                  ) : (
+                    <Link href={`/videos/${episode.id}`} className="video-page__episode-link">
+                      <span className="video-page__episode-number">
+                        第{episode.episodeNumber.toLocaleString()}話
+                      </span>
+                      <span className="video-page__episode-title">{episode.title}</span>
+                      <span className="video-page__episode-stats">
+                        {episode.view_count.toLocaleString()} 再生・{episode.like_count.toLocaleString()} いいね
+                      </span>
+                    </Link>
+                  )}
+                </li>
+              ))}
+            </ol>
+          </section>
+        )}
       </div>
       <aside className="video-page__meta">
         <div className="video-page__author">

@@ -16,6 +16,8 @@ type VideoWatchProps = {
   width: number | null;
   height: number | null;
   tags: string[];
+  episodeNumber?: number;
+  episodeCount?: number;
 };
 
 type LikeState = "liked" | "unliked" | "unknown";
@@ -40,6 +42,8 @@ export default function VideoWatch({
   width,
   height,
   tags,
+  episodeNumber,
+  episodeCount,
 }: VideoWatchProps) {
   const supabase = getBrowserSupabaseClient();
   const router = useRouter();
@@ -158,6 +162,18 @@ export default function VideoWatch({
     }
     return undefined;
   }, [height, width]);
+  const episodeLabel = useMemo(() => {
+    if (typeof episodeNumber !== "number") {
+      return null;
+    }
+    const formatter = new Intl.NumberFormat("ja-JP");
+    const numberText = formatter.format(episodeNumber);
+    const totalText =
+      typeof episodeCount === "number" && episodeCount > 0
+        ? ` / 全${formatter.format(episodeCount)}話`
+        : "";
+    return `第${numberText}話${totalText}`;
+  }, [episodeCount, episodeNumber]);
 
   const handleDelete = useCallback(async () => {
     if (!accessToken) {
@@ -211,6 +227,7 @@ export default function VideoWatch({
       </div>
       <div className="video-watch__body">
         <div>
+          {episodeLabel && <p className="video-watch__episode-label">{episodeLabel}</p>}
           <h1 className="video-watch__title">{title}</h1>
           <p className="video-watch__stats">
             <span>{viewCount.toLocaleString()} 再生</span>
