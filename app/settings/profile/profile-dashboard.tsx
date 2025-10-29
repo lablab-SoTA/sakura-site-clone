@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 
 import ProfileForm from "./profile-form";
 import { getBrowserSupabaseClient } from "@/lib/supabase/client";
@@ -71,7 +71,6 @@ export default function ProfileDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ActiveTab>("published");
   const [isEditorOpen, setIsEditorOpen] = useState(false);
-  const sliderRef = useRef<HTMLDivElement>(null);
 
   const loadData = useCallback(
     async (targetUserId: string) => {
@@ -157,32 +156,6 @@ export default function ProfileDashboard() {
     };
   }, [loadData, supabase]);
 
-  useEffect(() => {
-    const slider = sliderRef.current;
-    if (!slider) {
-      return;
-    }
-
-    let frame: number | null = null;
-    const handleScroll = () => {
-      if (frame !== null) {
-        cancelAnimationFrame(frame);
-      }
-      frame = requestAnimationFrame(() => {
-        const index = Math.round(slider.scrollLeft / slider.clientWidth);
-        setActiveTab(index === 0 ? "published" : "liked");
-      });
-    };
-
-    slider.addEventListener("scroll", handleScroll, { passive: true });
-    return () => {
-      slider.removeEventListener("scroll", handleScroll);
-      if (frame !== null) {
-        cancelAnimationFrame(frame);
-      }
-    };
-  }, []);
-
   const handleOpenEditor = () => {
     setIsEditorOpen(true);
   };
@@ -200,15 +173,6 @@ export default function ProfileDashboard() {
 
   const handleTabChange = (tab: ActiveTab) => {
     setActiveTab(tab);
-    const slider = sliderRef.current;
-    if (!slider) {
-      return;
-    }
-    const index = tab === "published" ? 0 : 1;
-    slider.scrollTo({
-      left: slider.clientWidth * index,
-      behavior: "smooth",
-    });
   };
 
   const snsLinks = useMemo(() => {
@@ -298,6 +262,7 @@ export default function ProfileDashboard() {
             type="button"
             role="tab"
             aria-selected={activeTab === "published"}
+            aria-controls="profile-dashboard-tabpanel-published"
             className={`profile-dashboard__tab${activeTab === "published" ? " profile-dashboard__tab--active" : ""}`}
             onClick={() => handleTabChange("published")}
           >
@@ -307,26 +272,41 @@ export default function ProfileDashboard() {
             type="button"
             role="tab"
             aria-selected={activeTab === "liked"}
+            aria-controls="profile-dashboard-tabpanel-liked"
             className={`profile-dashboard__tab${activeTab === "liked" ? " profile-dashboard__tab--active" : ""}`}
             onClick={() => handleTabChange("liked")}
           >
             いいねした作品
           </button>
         </div>
-        <div className="profile-dashboard__slider" ref={sliderRef}>
-          <div className="profile-dashboard__slide">
-            {publishedVideos.length > 0 ? (
-              <VideoList videos={publishedVideos} />
-            ) : (
-              <p className="profile-dashboard__empty">公開した作品はまだありません。</p>
-            )}
+        <div className="profile-dashboard__panels">
+          <div
+            className="profile-dashboard__panel"
+            role="tabpanel"
+            id="profile-dashboard-tabpanel-published"
+            aria-hidden={activeTab !== "published"}
+            hidden={activeTab !== "published"}
+          >
+            {activeTab === "published" &&
+              (publishedVideos.length > 0 ? (
+                <VideoList videos={publishedVideos} />
+              ) : (
+                <p className="profile-dashboard__empty">公開した作品はまだありません。</p>
+              ))}
           </div>
-          <div className="profile-dashboard__slide">
-            {likedVideos.length > 0 ? (
-              <VideoList videos={likedVideos} />
-            ) : (
-              <p className="profile-dashboard__empty">いいねした作品はまだありません。</p>
-            )}
+          <div
+            className="profile-dashboard__panel"
+            role="tabpanel"
+            id="profile-dashboard-tabpanel-liked"
+            aria-hidden={activeTab !== "liked"}
+            hidden={activeTab !== "liked"}
+          >
+            {activeTab === "liked" &&
+              (likedVideos.length > 0 ? (
+                <VideoList videos={likedVideos} />
+              ) : (
+                <p className="profile-dashboard__empty">いいねした作品はまだありません。</p>
+              ))}
           </div>
         </div>
       </section>

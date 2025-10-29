@@ -1414,6 +1414,13 @@ a {
   justify-content: center;
   gap: 16px;
   color: rgba(31, 34, 46, 0.72);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.profile-dashboard__sns li {
+  list-style: none; /* モバイルでの箇条書きマーカーの重なりを防ぐ */
 }
 
 .profile-dashboard__sns a {
@@ -1485,21 +1492,26 @@ a {
   color: #1f222e;
 }
 
-.profile-dashboard__slider {
-  display: flex;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scroll-behavior: smooth;
+.profile-dashboard__panels {
+  display: grid;
+  width: 100%;
+}
+
+.profile-dashboard__panel {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   border-radius: 36px;
   background: rgba(255, 255, 255, 0.95);
   box-shadow: 0 28px 74px rgba(31, 34, 46, 0.18);
   backdrop-filter: blur(12px);
+  padding: clamp(18px, 5vw, 26px);
+  overflow: hidden;
 }
 
-.profile-dashboard__slide {
-  scroll-snap-align: start;
-  flex: 0 0 100%;
-  padding: clamp(18px, 5vw, 26px);
+.profile-dashboard__panel[hidden] {
+  display: none;
 }
 
 @media (max-width: 720px) {
@@ -1541,12 +1553,45 @@ a {
     padding: 8px 16px;
   }
 
-  .profile-dashboard__slider {
+  .profile-dashboard__panel {
     border-radius: 22px;
+    padding: clamp(14px, 6vw, 22px);
+    box-shadow: 0 20px 48px rgba(31, 34, 46, 0.16);
   }
 
-  .profile-dashboard__slide {
-    padding: clamp(16px, 5vw, 24px);
+  .profile-dashboard__video-list {
+    gap: clamp(12px, 5vw, 16px);
+    padding-bottom: 4px;
+  }
+
+  .profile-dashboard__video-card {
+    min-width: clamp(180px, 70vw, 220px);
+    border-radius: 18px;
+  }
+
+  .profile-dashboard__video-card a {
+    gap: 10px;
+  }
+
+  .profile-dashboard__video-body {
+    padding: 0 14px 14px;
+    gap: 4px;
+  }
+
+  .profile-dashboard__video-body h3 {
+    font-size: 14px;
+    line-height: 1.4;
+  }
+
+  .profile-dashboard__video-body p {
+    font-size: 12px;
+  }
+}
+
+@media (min-width: 721px) {
+  .profile-dashboard__panel {
+    border-radius: 36px;
+    padding: clamp(18px, 5vw, 26px);
   }
 }
 
@@ -1561,6 +1606,8 @@ a {
   gap: clamp(16px, 4vw, 24px);
   overflow-x: auto;
   padding-bottom: 8px;
+  width: 100%;
+  max-width: 100%;
 }
 
 .profile-dashboard__video-card {
