@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 import { getBrowserSupabaseClient } from "@/lib/supabase/client";
@@ -30,32 +31,76 @@ export default function UploadForm() {
   const [isAdult, setIsAdult] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [isSessionResolved, setIsSessionResolved] = useState(false);
   const [isPending, startTransition] = useTransition();
   const videoInputRef = useRef<HTMLInputElement>(null);
   const thumbnailInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    let isMounted = true;
+
     const setup = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
-        setSessionUserId(data.session.user.id);
-        setAccessToken(data.session.access_token);
+      try {
+        const { data, error: sessionError } = await supabase.auth.getSession();
+        if (!isMounted) {
+          return;
+        }
+
+        if (sessionError) {
+          console.error("ログイン状態の取得に失敗しました", sessionError);
+          setSessionUserId(null);
+          setAccessToken(null);
+          setError("ログイン状態の確認に失敗しました。時間をおいて再度お試しください。");
+          return;
+        }
+
+        if (data.session) {
+          setSessionUserId(data.session.user.id);
+          setAccessToken(data.session.access_token);
+          setError(null);
+        } else {
+          setSessionUserId(null);
+          setAccessToken(null);
+          setError(null);
+        }
+      } catch (unknownError) {
+        console.error("ログイン状態の確認中にエラーが発生しました", unknownError);
+        if (!isMounted) {
+          return;
+        }
+        setSessionUserId(null);
+        setAccessToken(null);
+        setError("ログイン状態の確認に失敗しました。時間をおいて再度お試しください。");
+      } finally {
+        if (isMounted) {
+          setIsSessionResolved(true);
+        }
       }
     };
 
     setup();
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        setSessionUserId(session.user.id);
-        setAccessToken(session.access_token);
-      } else {
-        setSessionUserId(null);
-        setAccessToken(null);
+      try {
+        setSessionUserId(session ? session.user.id : null);
+        setAccessToken(session ? session.access_token : null);
+        if (!session) {
+          setError(null);
+          setMessage(null);
+          setSeriesOptions([]);
+          setSeriesId("");
+          setNewSeriesTitle("");
+          setNewSeriesDescription("");
+          setFile(null);
+          setThumbnailFile(null);
+        }
+      } finally {
+        setIsSessionResolved(true);
       }
     });
 
     return () => {
+      isMounted = false;
       listener.subscription.unsubscribe();
     };
   }, [supabase]);
@@ -99,6 +144,34 @@ export default function UploadForm() {
 
     return true;
   }, [file, isAdult, mosaicConfirmed, newSeriesTitle, noRepost, seriesId, thumbnailFile, title, type]);
+
+  if (!isSessionResolved) {
+    return (
+      <div className="auth-required" role="status">
+        <p className="auth-required__message">ログイン状態を確認しています...</p>
+      </div>
+    );
+  }
+
+  if (!sessionUserId) {
+    const redirectTo = encodeURIComponent("/upload");
+    return (
+      <div className="auth-required">
+        <p className="auth-required__message">動画をアップロードするにはログインが必要です。</p>
+        <div className="auth-required__actions">
+          <Link href={`/auth/login?redirectTo=${redirectTo}`} className="button">
+            ログイン
+          </Link>
+          <Link
+            href={`/auth/register?redirectTo=${redirectTo}`}
+            className="button button--ghost"
+          >
+            新規登録
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();

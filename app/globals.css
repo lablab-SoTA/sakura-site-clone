@@ -242,6 +242,49 @@ a {
   color: var(--accent-strong);
 }
 
+.layout__nav-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(12px, 3vw, 32px);
+}
+
+.layout__nav-actions {
+  display: flex;
+  gap: clamp(8px, 2vw, 16px);
+  align-items: center;
+}
+
+.layout__nav-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 18px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--fg);
+  font-weight: 600;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.layout__nav-action:hover,
+.layout__nav-action:focus-visible {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #1f222e;
+}
+
+.layout__nav-action--button {
+  cursor: pointer;
+}
+
+.layout__nav-action:disabled,
+.layout__nav-action[disabled] {
+  opacity: 0.6;
+  cursor: progress;
+  pointer-events: none;
+}
+
 .layout__footer-nav {
   position: fixed;
   inset-inline: 0;
@@ -719,6 +762,25 @@ a {
   outline: none;
   border-color: rgba(204, 62, 255, 0.7);
   box-shadow: 0 0 0 3px rgba(204, 62, 255, 0.15);
+}
+
+.auth-required {
+  display: grid;
+  gap: 18px;
+  text-align: center;
+  color: rgba(31, 34, 46, 0.82);
+}
+
+.auth-required__message {
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.auth-required__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
 }
 
 .auth-form__error {
