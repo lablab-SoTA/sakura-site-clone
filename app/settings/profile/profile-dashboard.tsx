@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 
 import ProfileForm from "./profile-form";
 import { getBrowserSupabaseClient } from "@/lib/supabase/client";
@@ -63,6 +64,7 @@ const snsIcons: Record<"x" | "instagram" | "youtube", ReactNode> = {
 
 export default function ProfileDashboard() {
   const supabase = getBrowserSupabaseClient();
+  const router = useRouter();
   const [viewState, setViewState] = useState<ViewState>("loading");
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [publishedVideos, setPublishedVideos] = useState<VideoData[]>([]);
@@ -71,7 +73,8 @@ export default function ProfileDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ActiveTab>("published");
   const [isEditorOpen, setIsEditorOpen] = useState(false);
-  const sliderRef = useRef<HTMLDivElement>(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState<string | null>(null);
 
   const loadData = useCallback(
     async (targetUserId: string) => {
@@ -157,32 +160,6 @@ export default function ProfileDashboard() {
     };
   }, [loadData, supabase]);
 
-  useEffect(() => {
-    const slider = sliderRef.current;
-    if (!slider) {
-      return;
-    }
-
-    let frame: number | null = null;
-    const handleScroll = () => {
-      if (frame !== null) {
-        cancelAnimationFrame(frame);
-      }
-      frame = requestAnimationFrame(() => {
-        const index = Math.round(slider.scrollLeft / slider.clientWidth);
-        setActiveTab(index === 0 ? "published" : "liked");
-      });
-    };
-
-    slider.addEventListener("scroll", handleScroll, { passive: true });
-    return () => {
-      slider.removeEventListener("scroll", handleScroll);
-      if (frame !== null) {
-        cancelAnimationFrame(frame);
-      }
-    };
-  }, []);
-
   const handleOpenEditor = () => {
     setIsEditorOpen(true);
   };
@@ -198,17 +175,22 @@ export default function ProfileDashboard() {
     await loadData(userId);
   };
 
-  const handleTabChange = (tab: ActiveTab) => {
-    setActiveTab(tab);
-    const slider = sliderRef.current;
-    if (!slider) {
+  const handleLogout = useCallback(async () => {
+    setLogoutError(null);
+    setIsLoggingOut(true);
+    const { error: signOutError } = await supabase.auth.signOut();
+    setIsLoggingOut(false);
+
+    if (signOutError) {
+      setLogoutError("ログアウトに失敗しました。時間をおいて再度お試しください。");
       return;
     }
-    const index = tab === "published" ? 0 : 1;
-    slider.scrollTo({
-      left: slider.clientWidth * index,
-      behavior: "smooth",
-    });
+
+    router.replace("/auth/login");
+  }, [router, supabase]);
+
+  const handleTabChange = (tab: ActiveTab) => {
+    setActiveTab(tab);
   };
 
   const snsLinks = useMemo(() => {
@@ -298,6 +280,7 @@ export default function ProfileDashboard() {
             type="button"
             role="tab"
             aria-selected={activeTab === "published"}
+            aria-controls="profile-dashboard-tabpanel-published"
             className={`profile-dashboard__tab${activeTab === "published" ? " profile-dashboard__tab--active" : ""}`}
             onClick={() => handleTabChange("published")}
           >
@@ -307,28 +290,55 @@ export default function ProfileDashboard() {
             type="button"
             role="tab"
             aria-selected={activeTab === "liked"}
+            aria-controls="profile-dashboard-tabpanel-liked"
             className={`profile-dashboard__tab${activeTab === "liked" ? " profile-dashboard__tab--active" : ""}`}
             onClick={() => handleTabChange("liked")}
           >
             いいねした作品
           </button>
         </div>
-        <div className="profile-dashboard__slider" ref={sliderRef}>
-          <div className="profile-dashboard__slide">
-            {publishedVideos.length > 0 ? (
-              <VideoList videos={publishedVideos} />
-            ) : (
-              <p className="profile-dashboard__empty">公開した作品はまだありません。</p>
-            )}
+        <div className="profile-dashboard__panels">
+          <div
+            className="profile-dashboard__panel"
+            role="tabpanel"
+            id="profile-dashboard-tabpanel-published"
+            aria-hidden={activeTab !== "published"}
+            hidden={activeTab !== "published"}
+          >
+            {activeTab === "published" &&
+              (publishedVideos.length > 0 ? (
+                <VideoList videos={publishedVideos} />
+              ) : (
+                <p className="profile-dashboard__empty">公開した作品はまだありません。</p>
+              ))}
           </div>
-          <div className="profile-dashboard__slide">
-            {likedVideos.length > 0 ? (
-              <VideoList videos={likedVideos} />
-            ) : (
-              <p className="profile-dashboard__empty">いいねした作品はまだありません。</p>
-            )}
+          <div
+            className="profile-dashboard__panel"
+            role="tabpanel"
+            id="profile-dashboard-tabpanel-liked"
+            aria-hidden={activeTab !== "liked"}
+            hidden={activeTab !== "liked"}
+          >
+            {activeTab === "liked" &&
+              (likedVideos.length > 0 ? (
+                <VideoList videos={likedVideos} />
+              ) : (
+                <p className="profile-dashboard__empty">いいねした作品はまだありません。</p>
+              ))}
           </div>
         </div>
+      </section>
+
+      <section className="profile-dashboard__logout" aria-label="アカウント操作">
+        {logoutError && <p className="profile-dashboard__logout-error">{logoutError}</p>}
+        <button
+          type="button"
+          className="button button--ghost profile-dashboard__logout-button"
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+        >
+          {isLoggingOut ? "ログアウト中..." : "ログアウト"}
+        </button>
       </section>
 
       {isEditorOpen && (

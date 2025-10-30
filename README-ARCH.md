@@ -49,6 +49,8 @@ open-next.config.ts # OpenNext 設定 (R2 インクリメンタルキャッシ�
 - `app/page.tsx` と `app/watch/[slug]/page.tsx` は `fetch('/data/anime.json', { cache: 'no-store' })` 相当を `lib/anime.ts` 経由で実行。
 - `headers()` から `host` / `proto` を取得し、Workers や開発時でも自サイトの JSON にアクセスできるように調整。
 - 今後 R2 から JSON を配信する場合は `NEXT_PUBLIC_SITE_URL` を `wrangler.jsonc` や環境変数で上書き可能。
+- `data/anime.json` は Series → Season → Episode → VideoFile の階層構造で管理し、`app/data/anime.json` ルートで `Anime[]` に変換、`app/data/anime-hierarchy` で生データを返却。
+- `scripts/import-hierarchy.js` で階層 JSON を Supabase に同期、`scripts/add-video.js` で階層構造に沿ったサンプルシリーズを追加できる。
 
 ## 動画プレイヤー
 - `components/Player.tsx` は Client Component。`src` が `.m3u8` の場合に hls.js を初期化。

@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 
 import { createServiceRoleClient, getUserFromRequest } from "@/lib/supabase/server";
+import type { EpisodeType } from "@/lib/types/hierarchy";
 
 type SeriesPayload = {
-  title: string;
+  title_raw: string;
+  title_clean: string;
+  slug: string;
   description?: string | null;
 };
 
@@ -16,8 +19,8 @@ export async function POST(request: Request) {
 
   const body = (await request.json().catch(() => null)) as SeriesPayload | null;
 
-  if (!body || !body.title) {
-    return NextResponse.json({ message: "シリーズ名を入力してください。" }, { status: 400 });
+  if (!body || !body.title_raw || !body.title_clean || !body.slug) {
+    return NextResponse.json({ message: "シリーズ名とスラッグを入力してください。" }, { status: 400 });
   }
 
   const supabase = createServiceRoleClient();
@@ -25,13 +28,16 @@ export async function POST(request: Request) {
     .from("series")
     .insert({
       owner_id: user.id,
-      title: body.title,
+      title_raw: body.title_raw,
+      title_clean: body.title_clean,
+      slug: body.slug,
       description: body.description ?? null,
     })
-    .select("id, title")
+    .select("id, title_clean, slug")
     .single();
 
   if (error) {
+    console.error("シリーズの作成エラー:", error);
     return NextResponse.json({ message: "シリーズの作成に失敗しました。" }, { status: 500 });
   }
 

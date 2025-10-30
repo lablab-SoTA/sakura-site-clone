@@ -21,6 +21,7 @@ export type AnimeEpisode = {
   duration: number;
   video: AnimeVideo;
   metrics?: AnimeMetrics;
+  episodeNumber?: number;
 };
 
 export type Anime = {
@@ -60,7 +61,7 @@ type VideoRow = {
   created_at: string;
 };
 
-function detectVideoType(url: string): "hls" | "mp4" {
+export function detectVideoType(url: string): "hls" | "mp4" {
   return url.endsWith(".m3u8") ? "hls" : "mp4";
 }
 
@@ -103,7 +104,11 @@ function buildAnimeFromSeries(series: SeriesRow, videos: VideoRow[]): Anime | nu
       const aCreated = videoMap.get(a.id)?.created_at ?? "";
       const bCreated = videoMap.get(b.id)?.created_at ?? "";
       return aCreated.localeCompare(bCreated);
-    });
+    })
+    .map((episode, index) => ({
+      ...episode,
+      episodeNumber: index + 1,
+    }));
 
   const totalViews = episodes.reduce((sum, episode) => sum + (episode.metrics?.views ?? 0), 0);
   const totalLikes = episodes.reduce((sum, episode) => sum + (episode.metrics?.likes ?? 0), 0);
@@ -145,7 +150,7 @@ function buildAnimeFromVideo(video: VideoRow): Anime {
     genres: parseTags(video.tags),
     duration: episode.duration,
     metrics: episode.metrics,
-    episodes: [episode],
+    episodes: [{ ...episode, episodeNumber: 1 }],
   };
 }
 
