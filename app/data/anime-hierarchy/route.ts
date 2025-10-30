@@ -1,14 +1,10 @@
 import { NextResponse } from "next/server";
 
 import animeData from "@/data/anime.json";
-import { convertSeriesHierarchyListToAnime } from "@/lib/hierarchy/adapter";
 import type { SeriesWithHierarchy } from "@/lib/types/hierarchy";
 
 export async function GET() {
-  const seriesList = animeData as SeriesWithHierarchy[];
-  const animeList = convertSeriesHierarchyListToAnime(seriesList);
-
-  return NextResponse.json(animeList, {
+  return NextResponse.json(animeData as SeriesWithHierarchy[], {
     headers: {
       "Cache-Control": "no-store",
     },

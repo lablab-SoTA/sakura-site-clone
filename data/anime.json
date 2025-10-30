@@ -1,144 +1,337 @@
 [
   {
+    "id": "11111111-1111-4111-8111-111111111111",
+    "owner_id": "aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaa1",
+    "title_raw": "xanime Dreams",
+    "title_clean": "xanime Dreams",
     "slug": "xanime-dreams",
-    "title": "xanime Dreams",
-    "synopsis": "舞い散る桜が導く異世界で、記憶を無くした青年が少女と出会い、季節を取り戻す旅に出る。",
-    "thumbnail": "/images/thumbnails/1759459342027454046_P2fcuqmi.png",
-    "year": 2025,
-    "rating": "G",
-    "genres": ["ファンタジー", "ドラマ"],
-    "creator": "Hanami Kaze",
-    "metrics": {
-      "views": 12840,
-      "likes": 642
-    },
-    "episodes": [
-      {
-        "id": "xanime-dreams-ep1",
-        "title": "第1話 春霞の出会い",
-        "synopsis": "記憶を失った青年が桜色の異世界で少女と出会い、失われた季節の秘密を探り始める。",
-        "duration": 1460,
-        "video": {
-          "type": "mp4",
-          "src": "/videos/sample.mp4",
-          "poster": "/images/thumbnails/1759459342027454046_P2fcuqmi.png"
-        },
-        "metrics": {
-          "views": 8240,
-          "likes": 412
-        }
+    "description": "舞い散る桜が導く異世界で、記憶を無くした青年が少女と出会い、季節を取り戻す旅に出る。",
+    "cover_url": "/images/thumbnails/1759459342027454046_P2fcuqmi.png",
+    "metadata": {
+      "year": 2025,
+      "rating": "G",
+      "genres": ["ファンタジー", "ドラマ"],
+      "creator": "Hanami Kaze",
+      "metrics": {
+        "views": 12840,
+        "likes": 642
       },
-      {
-        "id": "xanime-dreams-ep2",
-        "title": "第2話 追憶の花びら",
-        "synopsis": "少女の手がかりを求めて古い社を訪ねる二人。桜吹雪の中で青年は失った記憶の断片を垣間見る。",
-        "duration": 1500,
-        "video": {
-          "type": "mp4",
-          "src": "/videos/sample.mp4",
-          "poster": "/images/thumbnails/1759459342027454046_P2fcuqmi.png"
-        },
-        "metrics": {
-          "views": 4600,
-          "likes": 230
-        }
-      }
-    ],
-    "credits": {
-      "director": "Hanami Kaze",
-      "studio": "Studio Sakura",
-      "cast": ["Kaito Aiba", "Yuri Minami"]
-    }
-  },
-  {
-    "slug": "xanime-onsen-yu",
-    "title": "xanime 湯けむり夜話",
-    "synopsis": "夜の露天風呂に立ちこめる湯けむりのなか、桜色の髪の少女が秘密の語らいを交わす幻想的なショートムービー。",
-    "thumbnail": "/images/thumbnails/sakura-onsen.jpg",
-    "year": 2025,
-    "rating": "R18",
-    "genres": ["ドラマ", "ロマンス"],
-    "creator": "Miyabi Fubuki",
-    "metrics": {
-      "views": 8420,
-      "likes": 512
+      "total_duration_sec": 2960
     },
-    "episodes": [
+    "created_at": "2025-01-10T00:00:00Z",
+    "updated_at": "2025-01-10T00:00:00Z",
+    "seasons": [
       {
-        "id": "xanime-onsen-yu-ep1",
-        "title": "前編 湯気の向こう側",
-        "synopsis": "常連客の青年が温泉宿を再訪。夜霧のなかで出迎えた少女との会話が静かな夜を彩る。",
-        "duration": 360,
-        "video": {
-          "type": "mp4",
-          "src": "/videos/sakura-onsen.mp4",
-          "poster": "/images/thumbnails/sakura-onsen.jpg"
-        },
-        "metrics": {
-          "views": 5120,
-          "likes": 310
-        }
-      },
-      {
-        "id": "xanime-onsen-yu-ep2",
-        "title": "後編 月光の約束",
-        "synopsis": "湯けむりに包まれた月夜。少女が胸の内を明かし、二人は再会の約束を交わす。",
-        "duration": 420,
-        "video": {
-          "type": "mp4",
-          "src": "/videos/sakura-onsen.mp4",
-          "poster": "/images/thumbnails/sakura-onsen.jpg"
-        },
-        "metrics": {
-          "views": 3300,
-          "likes": 202
-        }
+        "id": "21111111-1111-4111-8111-111111111111",
+        "series_id": "11111111-1111-4111-8111-111111111111",
+        "season_number": 0,
+        "name": "メイン",
+        "slug": "xanime-dreams-main",
+        "description": null,
+        "created_at": "2025-01-10T00:00:00Z",
+        "updated_at": "2025-01-10T00:00:00Z",
+        "episodes": [
+          {
+            "id": "31111111-1111-4111-8111-111111111111",
+            "season_id": "21111111-1111-4111-8111-111111111111",
+            "episode_number_int": 1,
+            "episode_number_str": "第1話",
+            "episode_type": "regular",
+            "title_raw": "第1話 春霞の出会い",
+            "title_clean": "春霞の出会い",
+            "slug": "xanime-dreams-main-episode-1",
+            "description": "記憶を失った青年が桜色の異世界で少女と出会い、失われた季節の秘密を探り始める。",
+            "release_date": "2025-02-01",
+            "duration_sec": 1460,
+            "tags": ["ファンタジー", "ドラマ"],
+            "thumbnail_url": "/images/thumbnails/1759459342027454046_P2fcuqmi.png",
+            "created_at": "2025-02-01T00:00:00Z",
+            "updated_at": "2025-02-01T00:00:00Z",
+            "video_file": {
+              "id": "41111111-1111-4111-8111-111111111111",
+              "episode_id": "31111111-1111-4111-8111-111111111111",
+              "owner_id": "aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaa1",
+              "file_path": "/videos/sample.mp4",
+              "public_url": "/videos/sample.mp4",
+              "width": null,
+              "height": null,
+              "duration_sec": 1460,
+              "thumbnail_url": "/images/thumbnails/1759459342027454046_P2fcuqmi.png",
+              "is_adult": false,
+              "mosaic_confirmed": false,
+              "no_repost": true,
+              "visibility": "PUBLIC",
+              "status": "PUBLISHED",
+              "view_count": 8240,
+              "like_count": 412,
+              "published_at": "2025-02-01T00:00:00Z",
+              "created_at": "2025-02-01T00:00:00Z",
+              "updated_at": "2025-02-01T00:00:00Z"
+            }
+          },
+          {
+            "id": "31111111-1111-4111-8111-111111111112",
+            "season_id": "21111111-1111-4111-8111-111111111111",
+            "episode_number_int": 2,
+            "episode_number_str": "第2話",
+            "episode_type": "regular",
+            "title_raw": "第2話 追憶の花びら",
+            "title_clean": "追憶の花びら",
+            "slug": "xanime-dreams-main-episode-2",
+            "description": "少女の手がかりを求めて古い社を訪ねる二人。桜吹雪の中で青年は失った記憶の断片を垣間見る。",
+            "release_date": "2025-02-08",
+            "duration_sec": 1500,
+            "tags": ["ファンタジー", "ドラマ"],
+            "thumbnail_url": "/images/thumbnails/1759459342027454046_P2fcuqmi.png",
+            "created_at": "2025-02-08T00:00:00Z",
+            "updated_at": "2025-02-08T00:00:00Z",
+            "video_file": {
+              "id": "41111111-1111-4111-8111-111111111112",
+              "episode_id": "31111111-1111-4111-8111-111111111112",
+              "owner_id": "aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaa1",
+              "file_path": "/videos/sample.mp4",
+              "public_url": "/videos/sample.mp4",
+              "width": null,
+              "height": null,
+              "duration_sec": 1500,
+              "thumbnail_url": "/images/thumbnails/1759459342027454046_P2fcuqmi.png",
+              "is_adult": false,
+              "mosaic_confirmed": false,
+              "no_repost": true,
+              "visibility": "PUBLIC",
+              "status": "PUBLISHED",
+              "view_count": 4600,
+              "like_count": 230,
+              "published_at": "2025-02-08T00:00:00Z",
+              "created_at": "2025-02-08T00:00:00Z",
+              "updated_at": "2025-02-08T00:00:00Z"
+            }
+          }
+        ]
       }
     ]
   },
   {
-    "slug": "sakura-bousou",
-    "title": "桜大暴走",
-    "synopsis": "パンツを見せてほしいと懇願する患者に看護師の桜が情け容赦ない言葉を浴びせる。",
-    "thumbnail": "/images/thumbnails/sm.jpeg",
-    "year": 2025,
-    "rating": "R15",
-    "genres": ["ドラマ", "コメディ"],
-    "creator": "Sakura.D",
-    "metrics": {
-      "views": 4560,
-      "likes": 301
-    },
-    "episodes": [
-      {
-        "id": "sakura-bousou-ep1",
-        "title": "第1夜 罵声カルテ",
-        "synopsis": "深夜勤務のナースステーションに押しかけた患者が、桜の痛烈な一言で一瞬にして黙り込む。",
-        "duration": 600,
-        "video": {
-          "type": "mp4",
-          "src": "/videos/sakura-sm.mp4",
-          "poster": "/images/thumbnails/sm.jpeg"
-        },
-        "metrics": {
-          "views": 2860,
-          "likes": 180
-        }
+    "id": "22222222-2222-4222-8222-222222222222",
+    "owner_id": "aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaa2",
+    "title_raw": "xanime 湯けむり夜話",
+    "title_clean": "xanime 湯けむり夜話",
+    "slug": "xanime-yukemuri-yowa",
+    "description": "夜の露天風呂に立ちこめる湯けむりのなか、桜色の髪の少女が秘密の語らいを交わす幻想的なショートムービー。",
+    "cover_url": "/images/thumbnails/sakura-onsen.jpg",
+    "metadata": {
+      "year": 2025,
+      "rating": "R18",
+      "genres": ["ドラマ", "ロマンス"],
+      "creator": "Miyabi Fubuki",
+      "metrics": {
+        "views": 8420,
+        "likes": 512
       },
+      "total_duration_sec": 780
+    },
+    "created_at": "2025-02-05T00:00:00Z",
+    "updated_at": "2025-02-05T00:00:00Z",
+    "seasons": [
       {
-        "id": "sakura-bousou-ep2",
-        "title": "第2夜 夜勤ブレイクアウト",
-        "synopsis": "桜の毒舌がさらに冴えわたり、同僚たちも巻き込んだ騒動が院内の噂になる。",
-        "duration": 720,
-        "video": {
-          "type": "mp4",
-          "src": "/videos/SM.mp4",
-          "poster": "/images/thumbnails/sm.jpeg"
-        },
-        "metrics": {
-          "views": 1700,
-          "likes": 121
-        }
+        "id": "23222222-2222-4222-8222-222222222222",
+        "series_id": "22222222-2222-4222-8222-222222222222",
+        "season_number": 0,
+        "name": "メイン",
+        "slug": "xanime-yukemuri-yowa-main",
+        "description": null,
+        "created_at": "2025-02-05T00:00:00Z",
+        "updated_at": "2025-02-05T00:00:00Z",
+        "episodes": [
+          {
+            "id": "33222222-2222-4222-8222-222222222221",
+            "season_id": "23222222-2222-4222-8222-222222222222",
+            "episode_number_int": 1,
+            "episode_number_str": "第1話",
+            "episode_type": "regular",
+            "title_raw": "前編 湯気の向こう側",
+            "title_clean": "湯気の向こう側",
+            "slug": "xanime-yukemuri-yowa-main-episode-1",
+            "description": "常連客の青年が温泉宿を再訪。夜霧のなかで出迎えた少女との会話が静かな夜を彩る。",
+            "release_date": "2025-03-15",
+            "duration_sec": 360,
+            "tags": ["ドラマ", "ロマンス"],
+            "thumbnail_url": "/images/thumbnails/sakura-onsen.jpg",
+            "created_at": "2025-03-15T00:00:00Z",
+            "updated_at": "2025-03-15T00:00:00Z",
+            "video_file": {
+              "id": "43222222-2222-4222-8222-222222222221",
+              "episode_id": "33222222-2222-4222-8222-222222222221",
+              "owner_id": "aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaa2",
+              "file_path": "/videos/sakura-onsen.mp4",
+              "public_url": "/videos/sakura-onsen.mp4",
+              "width": null,
+              "height": null,
+              "duration_sec": 360,
+              "thumbnail_url": "/images/thumbnails/sakura-onsen.jpg",
+              "is_adult": true,
+              "mosaic_confirmed": false,
+              "no_repost": true,
+              "visibility": "PUBLIC",
+              "status": "PUBLISHED",
+              "view_count": 5120,
+              "like_count": 310,
+              "published_at": "2025-03-15T00:00:00Z",
+              "created_at": "2025-03-15T00:00:00Z",
+              "updated_at": "2025-03-15T00:00:00Z"
+            }
+          },
+          {
+            "id": "33222222-2222-4222-8222-222222222222",
+            "season_id": "23222222-2222-4222-8222-222222222222",
+            "episode_number_int": 2,
+            "episode_number_str": "第2話",
+            "episode_type": "regular",
+            "title_raw": "後編 月光の約束",
+            "title_clean": "月光の約束",
+            "slug": "xanime-yukemuri-yowa-main-episode-2",
+            "description": "湯けむりに包まれた月夜。少女が胸の内を明かし、二人は再会の約束を交わす。",
+            "release_date": "2025-03-22",
+            "duration_sec": 420,
+            "tags": ["ドラマ", "ロマンス"],
+            "thumbnail_url": "/images/thumbnails/sakura-onsen.jpg",
+            "created_at": "2025-03-22T00:00:00Z",
+            "updated_at": "2025-03-22T00:00:00Z",
+            "video_file": {
+              "id": "43222222-2222-4222-8222-222222222222",
+              "episode_id": "33222222-2222-4222-8222-222222222222",
+              "owner_id": "aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaa2",
+              "file_path": "/videos/sakura-onsen.mp4",
+              "public_url": "/videos/sakura-onsen.mp4",
+              "width": null,
+              "height": null,
+              "duration_sec": 420,
+              "thumbnail_url": "/images/thumbnails/sakura-onsen.jpg",
+              "is_adult": true,
+              "mosaic_confirmed": false,
+              "no_repost": true,
+              "visibility": "PUBLIC",
+              "status": "PUBLISHED",
+              "view_count": 3300,
+              "like_count": 202,
+              "published_at": "2025-03-22T00:00:00Z",
+              "created_at": "2025-03-22T00:00:00Z",
+              "updated_at": "2025-03-22T00:00:00Z"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "33333333-3333-4333-8333-333333333333",
+    "owner_id": "aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaa3",
+    "title_raw": "桜大暴走",
+    "title_clean": "桜大暴走",
+    "slug": "sakura-dai-bousou",
+    "description": "パンツを見せてほしいと懇願する患者に看護師の桜が情け容赦ない言葉を浴びせる。",
+    "cover_url": "/images/thumbnails/sm.jpeg",
+    "metadata": {
+      "year": 2025,
+      "rating": "R15",
+      "genres": ["ドラマ", "コメディ"],
+      "creator": "Sakura.D",
+      "metrics": {
+        "views": 4560,
+        "likes": 301
+      },
+      "total_duration_sec": 1320
+    },
+    "created_at": "2025-03-01T00:00:00Z",
+    "updated_at": "2025-03-01T00:00:00Z",
+    "seasons": [
+      {
+        "id": "34333333-3333-4333-8333-333333333333",
+        "series_id": "33333333-3333-4333-8333-333333333333",
+        "season_number": 0,
+        "name": "メイン",
+        "slug": "sakura-dai-bousou-main",
+        "description": null,
+        "created_at": "2025-03-01T00:00:00Z",
+        "updated_at": "2025-03-01T00:00:00Z",
+        "episodes": [
+          {
+            "id": "35333333-3333-4333-8333-333333333331",
+            "season_id": "34333333-3333-4333-8333-333333333333",
+            "episode_number_int": 1,
+            "episode_number_str": "第1話",
+            "episode_type": "regular",
+            "title_raw": "第1夜 罵声カルテ",
+            "title_clean": "罵声カルテ",
+            "slug": "sakura-dai-bousou-main-episode-1",
+            "description": "深夜勤務のナースステーションに押しかけた患者が、桜の痛烈な一言で一瞬にして黙り込む。",
+            "release_date": "2025-04-05",
+            "duration_sec": 600,
+            "tags": ["ドラマ", "コメディ"],
+            "thumbnail_url": "/images/thumbnails/sm.jpeg",
+            "created_at": "2025-04-05T00:00:00Z",
+            "updated_at": "2025-04-05T00:00:00Z",
+            "video_file": {
+              "id": "36333333-3333-4333-8333-333333333331",
+              "episode_id": "35333333-3333-4333-8333-333333333331",
+              "owner_id": "aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaa3",
+              "file_path": "/videos/sakura-sm.mp4",
+              "public_url": "/videos/sakura-sm.mp4",
+              "width": null,
+              "height": null,
+              "duration_sec": 600,
+              "thumbnail_url": "/images/thumbnails/sm.jpeg",
+              "is_adult": false,
+              "mosaic_confirmed": false,
+              "no_repost": true,
+              "visibility": "PUBLIC",
+              "status": "PUBLISHED",
+              "view_count": 2860,
+              "like_count": 180,
+              "published_at": "2025-04-05T00:00:00Z",
+              "created_at": "2025-04-05T00:00:00Z",
+              "updated_at": "2025-04-05T00:00:00Z"
+            }
+          },
+          {
+            "id": "35333333-3333-4333-8333-333333333332",
+            "season_id": "34333333-3333-4333-8333-333333333333",
+            "episode_number_int": 2,
+            "episode_number_str": "第2話",
+            "episode_type": "regular",
+            "title_raw": "第2夜 夜勤ブレイクアウト",
+            "title_clean": "夜勤ブレイクアウト",
+            "slug": "sakura-dai-bousou-main-episode-2",
+            "description": "桜の毒舌がさらに冴えわたり、同僚たちも巻き込んだ騒動が院内の噂になる。",
+            "release_date": "2025-04-12",
+            "duration_sec": 720,
+            "tags": ["ドラマ", "コメディ"],
+            "thumbnail_url": "/images/thumbnails/sm.jpeg",
+            "created_at": "2025-04-12T00:00:00Z",
+            "updated_at": "2025-04-12T00:00:00Z",
+            "video_file": {
+              "id": "36333333-3333-4333-8333-333333333332",
+              "episode_id": "35333333-3333-4333-8333-333333333332",
+              "owner_id": "aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaa3",
+              "file_path": "/videos/SM.mp4",
+              "public_url": "/videos/SM.mp4",
+              "width": null,
+              "height": null,
+              "duration_sec": 720,
+              "thumbnail_url": "/images/thumbnails/sm.jpeg",
+              "is_adult": false,
+              "mosaic_confirmed": false,
+              "no_repost": true,
+              "visibility": "PUBLIC",
+              "status": "PUBLISHED",
+              "view_count": 1700,
+              "like_count": 121,
+              "published_at": "2025-04-12T00:00:00Z",
+              "created_at": "2025-04-12T00:00:00Z",
+              "updated_at": "2025-04-12T00:00:00Z"
+            }
+          }
+        ]
       }
     ]
   }

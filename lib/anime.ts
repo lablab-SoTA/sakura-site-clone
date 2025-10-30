@@ -61,7 +61,7 @@ type VideoRow = {
   created_at: string;
 };
 
-function detectVideoType(url: string): "hls" | "mp4" {
+export function detectVideoType(url: string): "hls" | "mp4" {
   return url.endsWith(".m3u8") ? "hls" : "mp4";
 }
 

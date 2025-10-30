@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { getBrowserSupabaseClient } from "@/lib/supabase/client";
@@ -18,6 +19,9 @@ type VideoWatchProps = {
   tags: string[];
   episodeNumber?: number;
   episodeCount?: number;
+  seriesId?: string | null;
+  seriesSlug?: string | null;
+  firstEpisodeId?: string | null;
 };
 
 type LikeState = "liked" | "unliked" | "unknown";
@@ -44,6 +48,9 @@ export default function VideoWatch({
   tags,
   episodeNumber,
   episodeCount,
+  seriesId,
+  seriesSlug,
+  firstEpisodeId,
 }: VideoWatchProps) {
   const supabase = getBrowserSupabaseClient();
   const router = useRouter();
@@ -251,7 +258,15 @@ export default function VideoWatch({
       <div className="video-watch__body">
         <div>
           {episodeLabel && <p className="video-watch__episode-label">{episodeLabel}</p>}
-          <h1 className="video-watch__title">{title}</h1>
+          {firstEpisodeId ? (
+            <h1 className="video-watch__title">
+              <Link href={`/videos/${firstEpisodeId}`} className="video-watch__title-link">
+                {title}
+              </Link>
+            </h1>
+          ) : (
+            <h1 className="video-watch__title">{title}</h1>
+          )}
           <p className="video-watch__stats">
             <span>{viewCount.toLocaleString()} 再生</span>
             <span>{likeCount.toLocaleString()} いいね</span>

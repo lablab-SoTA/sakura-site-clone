@@ -12,7 +12,8 @@
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
-    "add-video": "node scripts/add-video.js"
+    "add-video": "node scripts/add-video.js",
+    "import-hierarchy": "node scripts/import-hierarchy.js"
   },
   "repository": {
     "type": "git",
