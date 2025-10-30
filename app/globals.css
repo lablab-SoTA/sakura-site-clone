@@ -1344,20 +1344,24 @@ a {
 }
 
 .video-watch__media {
+  --video-media-padding: clamp(6px, 2vw, 12px);
   display: grid;
   place-items: center;
   background: #000;
   border-radius: 24px;
   overflow: hidden;
   box-shadow: 0 30px 60px rgba(0, 0, 0, 0.18);
-  padding: clamp(6px, 2vw, 12px);
+  padding: var(--video-media-padding);
+  position: relative;
+  max-height: min(82vh, 920px);
 }
 
 .video-watch__media video {
-  width: 100%;
+  width: calc(100% + var(--video-media-padding) * 2);
   height: auto;
   display: block;
-  max-height: min(82vh, 920px);
+  max-width: none;
+  margin: calc(var(--video-media-padding) * -1);
   background: #000;
 }
 
