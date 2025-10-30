@@ -63,6 +63,44 @@ export default function VideoWatch({
   const [isTogglingLike, setIsTogglingLike] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [controlsVisible, setControlsVisible] = useState(false);
+  const hideControlsTimerRef = useRef<number | null>(null);
+
+  const clearHideTimer = useCallback(() => {
+    if (hideControlsTimerRef.current !== null) {
+      window.clearTimeout(hideControlsTimerRef.current);
+      hideControlsTimerRef.current = null;
+    }
+  }, []);
+
+  const hideControls = useCallback(() => {
+    clearHideTimer();
+    setControlsVisible(false);
+  }, [clearHideTimer]);
+
+  const showControlsTemporarily = useCallback(
+    (durationMs = 3000) => {
+      setControlsVisible(true);
+      clearHideTimer();
+      if (durationMs > 0) {
+        hideControlsTimerRef.current = window.setTimeout(() => {
+          setControlsVisible(false);
+          hideControlsTimerRef.current = null;
+        }, durationMs);
+      }
+    },
+    [clearHideTimer],
+  );
+
+  const showControlsIndefinitely = useCallback(() => {
+    showControlsTemporarily(0);
+  }, [showControlsTemporarily]);
+
+  useEffect(() => {
+    return () => {
+      clearHideTimer();
+    };
+  }, [clearHideTimer]);
 
   useEffect(() => {
     const resolveSession = async () => {
@@ -92,8 +130,17 @@ export default function VideoWatch({
     if (!element) {
       return;
     }
+    element.controls = controlsVisible;
+  }, [controlsVisible]);
+
+  useEffect(() => {
+    const element = videoRef.current;
+    if (!element) {
+      return;
+    }
 
     const tryPlay = () => {
+      element.muted = false;
       const playPromise = element.play();
       if (playPromise && typeof playPromise.then === "function") {
         playPromise.catch(() => {
@@ -110,6 +157,60 @@ export default function VideoWatch({
       element.removeEventListener("loadeddata", tryPlay);
     };
   }, [src]);
+
+  useEffect(() => {
+    const element = videoRef.current;
+    if (!element) {
+      return;
+    }
+
+    const showByInteraction = () => {
+      if (element.paused || element.ended) {
+        showControlsIndefinitely();
+      } else {
+        showControlsTemporarily();
+      }
+    };
+
+    const revealIndefinitely = () => showControlsIndefinitely();
+    const handleLeave = () => {
+      if (!element.paused && !element.ended) {
+        hideControls();
+      }
+    };
+
+    element.addEventListener("pointermove", showByInteraction);
+    element.addEventListener("pointerdown", showByInteraction);
+    element.addEventListener("touchstart", showByInteraction, { passive: true });
+    element.addEventListener("touchmove", showByInteraction, { passive: true });
+    element.addEventListener("pause", revealIndefinitely);
+    element.addEventListener("ended", revealIndefinitely);
+    element.addEventListener("mouseenter", showByInteraction);
+    element.addEventListener("mouseleave", handleLeave);
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!element) return;
+      const target = event.target as Node | null;
+      if (target && target !== element && !element.contains(target)) {
+        return;
+      }
+      showByInteraction();
+    };
+
+    document.addEventListener("keydown", handleKeyDown, true);
+
+    return () => {
+      element.removeEventListener("pointermove", showByInteraction);
+      element.removeEventListener("pointerdown", showByInteraction);
+      element.removeEventListener("touchstart", showByInteraction);
+      element.removeEventListener("touchmove", showByInteraction);
+      element.removeEventListener("pause", revealIndefinitely);
+      element.removeEventListener("ended", revealIndefinitely);
+      element.removeEventListener("mouseenter", showByInteraction);
+      element.removeEventListener("mouseleave", handleLeave);
+      document.removeEventListener("keydown", handleKeyDown, true);
+    };
+  }, [hideControls, showControlsIndefinitely, showControlsTemporarily]);
 
   const handleToggleLike = useCallback(async () => {
     if (!accessToken) {
@@ -158,6 +259,8 @@ export default function VideoWatch({
   }, [accessToken, isTogglingLike, likeCount, likeState, videoId]);
 
   const handlePlay = useCallback(async () => {
+    hideControls();
+
     const storageKey = `xanime_view_${videoId}`;
     if (typeof window !== "undefined") {
       const alreadyCounted = localStorage.getItem(storageKey);
@@ -180,7 +283,7 @@ export default function VideoWatch({
     if (typeof window !== "undefined") {
       localStorage.setItem(storageKey, "1");
     }
-  }, [videoId]);
+  }, [hideControls, videoId]);
 
   const likeLabel = useMemo(() => (likeState === "liked" ? "いいね済み" : "いいね"), [likeState]);
   const deleteLabel = isDeleting ? "削除中..." : "動画を削除";
@@ -245,14 +348,14 @@ export default function VideoWatch({
       <div className="video-watch__media">
         <video
           ref={videoRef}
-          controls
+          controls={controlsVisible}
           autoPlay
-          muted
           playsInline
           preload="auto"
           src={src}
           onPlay={handlePlay}
           style={videoStyle}
+          controlsList="nodownload noplaybackrate"
         />
       </div>
       <div className="video-watch__body">
