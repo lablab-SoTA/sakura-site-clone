@@ -29,7 +29,10 @@ TERMS_VERSION=2025-10-01
 ### 事前に一度だけ実行
 ```bash
 chmod +x scripts/create_worktrees.sh   # 初回のみ
-./scripts/create_worktrees.sh
+./scripts/create_worktrees.sh          # develop が無い場合は main を自動で利用
+
+# ベースブランチを明示したいときは環境変数で上書き
+WORKTREE_BASE_REF=origin/main ./scripts/create_worktrees.sh
 ```
 
 - `../worktrees/wt-frontend` などのディレクトリに `feature/<agent>/base` ブランチが作成されます。

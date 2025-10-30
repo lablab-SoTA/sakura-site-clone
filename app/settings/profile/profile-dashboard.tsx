@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import type { PostgrestError } from "@supabase/supabase-js";
 
 import ProfileForm from "./profile-form";
 import { getBrowserSupabaseClient } from "@/lib/supabase/client";
@@ -25,11 +26,76 @@ type VideoData = {
   like_count: number;
   view_count: number;
   created_at: string;
+  series_id: string | null;
+  series_title: string | null;
+  episode_number_int?: number | null;
+  episode_number_str?: string | null;
+  watchPath: string | null;
+  source: "legacy" | "hierarchy";
 };
 
-type LikeRow = {
+type LegacyVideoRow = {
+  id: string;
+  title: string;
+  public_url: string;
+  thumbnail_url: string | null;
+  like_count: number;
+  view_count: number;
   created_at: string;
-  video: VideoData | null;
+  series_id: string | null;
+  series?: {
+    title_clean?: string | null;
+    title_raw?: string | null;
+    title?: string | null;
+    slug?: string | null;
+  } | null;
+};
+
+type EpisodeRow = {
+  id: string;
+  title_clean: string | null;
+  title_raw: string | null;
+  episode_number_int: number | null;
+  episode_number_str: string | null;
+  created_at: string;
+  season: {
+    id: string;
+    name: string | null;
+    season_number: number | null;
+    series: {
+      id: string;
+      title_clean: string | null;
+      title_raw: string | null;
+      slug?: string | null;
+      title?: string | null;
+    } | null;
+  } | null;
+  video_file: {
+    id: string;
+    owner_id: string;
+    public_url: string;
+    thumbnail_url: string | null;
+    like_count: number | null;
+    view_count: number | null;
+    visibility: "PUBLIC" | "UNLISTED" | "PRIVATE";
+    status: "PUBLISHED" | "DRAFT" | "ARCHIVED";
+  } | null;
+};
+
+type VideoGroup = {
+  key: string;
+  title: string;
+  videos: VideoData[];
+};
+
+type LegacyLikeRow = {
+  created_at: string;
+  video: LegacyVideoRow | null;
+};
+
+type EpisodeLikeRow = {
+  created_at: string;
+  episode: EpisodeRow | null;
 };
 
 type ViewState = "loading" | "signedOut" | "ready";
@@ -62,6 +128,14 @@ const snsIcons: Record<"x" | "instagram" | "youtube", ReactNode> = {
   ),
 };
 
+function isMissingColumn(error: PostgrestError | null | undefined): boolean {
+  return error?.code === "42703";
+}
+
+function isMissingTable(error: PostgrestError | null | undefined): boolean {
+  return error?.code === "PGRST205";
+}
+
 export default function ProfileDashboard() {
   const supabase = getBrowserSupabaseClient();
   const router = useRouter();
@@ -79,40 +153,145 @@ export default function ProfileDashboard() {
   const loadData = useCallback(
     async (targetUserId: string) => {
       setError(null);
-      const [profileRes, videosRes, likedRes] = await Promise.all([
-        supabase
-          .from("profiles")
-          .select("display_name, bio, avatar_url, sns_x, sns_instagram, sns_youtube")
-          .eq("user_id", targetUserId)
-          .maybeSingle<ProfileData>(),
-        supabase
-          .from("videos")
-          .select("id, title, public_url, thumbnail_url, like_count, view_count, created_at")
-          .eq("owner_id", targetUserId)
-          .eq("visibility", "PUBLIC")
-          .eq("status", "PUBLISHED")
-          .order("created_at", { ascending: false })
-          .returns<VideoData[]>(),
-        supabase
-          .from("likes")
-          .select(
-            "created_at, video:videos(id, title, public_url, thumbnail_url, like_count, view_count, created_at)",
-          )
-          .eq("user_id", targetUserId)
-          .order("created_at", { ascending: false })
-          .returns<LikeRow[]>(),
-      ]);
 
-      if (profileRes.error || videosRes.error || likedRes.error) {
-        throw profileRes.error ?? videosRes.error ?? likedRes.error;
+      const { data: profileRow, error: profileError } = await supabase
+        .from("profiles")
+        .select("display_name, bio, avatar_url, sns_x, sns_instagram, sns_youtube")
+        .eq("user_id", targetUserId)
+        .maybeSingle<ProfileData>();
+
+      if (profileError) {
+        throw profileError;
       }
 
-      setProfile(profileRes.data ?? null);
-      setPublishedVideos(videosRes.data ?? []);
-      const filteredLikes = (likedRes.data ?? [])
+      setProfile(profileRow ?? null);
+
+      // 旧 videos テーブルの取得
+      let legacyVideoRows: LegacyVideoRow[] | null = null;
+      let legacyVideoError: PostgrestError | null | undefined;
+
+      const legacyVideoQuery = await supabase
+        .from("videos")
+        .select(
+          "id, title, public_url, thumbnail_url, like_count, view_count, created_at, series_id, series:series(*)",
+        )
+        .eq("owner_id", targetUserId)
+        .eq("visibility", "PUBLIC")
+        .eq("status", "PUBLISHED")
+        .order("created_at", { ascending: false })
+        .returns<LegacyVideoRow[]>();
+
+      legacyVideoRows = legacyVideoQuery.data ?? null;
+      legacyVideoError = legacyVideoQuery.error;
+
+      if (legacyVideoError) {
+        if (isMissingColumn(legacyVideoError)) {
+          const fallbackVideos = await supabase
+            .from("videos")
+            .select("id, title, public_url, thumbnail_url, like_count, view_count, created_at, series_id")
+            .eq("owner_id", targetUserId)
+            .eq("visibility", "PUBLIC")
+            .eq("status", "PUBLISHED")
+            .order("created_at", { ascending: false })
+            .returns<LegacyVideoRow[]>();
+
+          if (fallbackVideos.error) {
+            throw fallbackVideos.error;
+          }
+
+          legacyVideoRows = (fallbackVideos.data ?? []).map((row) => ({ ...row, series: null }));
+        } else {
+          throw legacyVideoError;
+        }
+      }
+
+      const legacyPublished = (legacyVideoRows ?? []).map(normalizeLegacyVideoRow);
+
+      let legacyLikeRows: LegacyLikeRow[] | null = null;
+      let legacyLikeError: PostgrestError | null | undefined;
+
+      const legacyLikesQuery = await supabase
+        .from("likes")
+        .select(
+          "created_at, video:videos(id, title, public_url, thumbnail_url, like_count, view_count, created_at, series_id, series:series(*))",
+        )
+        .eq("user_id", targetUserId)
+        .order("created_at", { ascending: false })
+        .returns<LegacyLikeRow[]>();
+
+      legacyLikeRows = legacyLikesQuery.data ?? null;
+      legacyLikeError = legacyLikesQuery.error;
+
+      if (legacyLikeError) {
+        if (isMissingColumn(legacyLikeError)) {
+          const fallbackLikes = await supabase
+            .from("likes")
+            .select("created_at, video:videos(id, title, public_url, thumbnail_url, like_count, view_count, created_at, series_id)")
+            .eq("user_id", targetUserId)
+            .order("created_at", { ascending: false })
+            .returns<LegacyLikeRow[]>();
+
+          if (fallbackLikes.error) {
+            throw fallbackLikes.error;
+          }
+
+          legacyLikeRows = (fallbackLikes.data ?? []).map((row) =>
+            row.video ? { ...row, video: { ...row.video, series: null } } : row,
+          );
+        } else {
+          throw legacyLikeError;
+        }
+      }
+
+      const legacyLiked = (legacyLikeRows ?? [])
         .map((item) => item.video)
-        .filter((video): video is VideoData => !!video);
-      setLikedVideos(filteredLikes);
+        .filter((video): video is LegacyVideoRow => !!video)
+        .map(normalizeLegacyVideoRow);
+
+      // 新しい episodes / episode_likes テーブル（存在しない環境では空として扱う）
+      const hierarchyPublished: VideoData[] = [];
+      const { data: episodeRows, error: episodeError } = await supabase
+        .from("episodes")
+        .select(
+          "id, title_clean, title_raw, episode_number_int, episode_number_str, created_at, season:seasons(id, name, season_number, series:series(*)), video_file:video_files(id, owner_id, public_url, thumbnail_url, like_count, view_count, visibility, status)",
+        )
+        .eq("video_file.owner_id", targetUserId)
+        .not("video_file", "is", null)
+        .order("created_at", { ascending: false })
+        .returns<EpisodeRow[]>();
+
+      if (!episodeError) {
+        hierarchyPublished.push(
+          ...((episodeRows ?? []).map(normalizeEpisodeRow).filter((video): video is VideoData => video !== null)),
+        );
+      } else if (!isMissingTable(episodeError)) {
+        console.warn("新しい階層データの取得に失敗しました", episodeError);
+      }
+
+      const hierarchyLiked: VideoData[] = [];
+      const { data: episodeLikeRows, error: episodeLikeError } = await supabase
+        .from("episode_likes")
+        .select(
+          "created_at, episode:episodes(id, title_clean, title_raw, episode_number_int, episode_number_str, created_at, season:seasons(id, name, season_number, series:series(*)), video_file:video_files(id, owner_id, public_url, thumbnail_url, like_count, view_count, visibility, status))",
+        )
+        .eq("user_id", targetUserId)
+        .order("created_at", { ascending: false })
+        .returns<EpisodeLikeRow[]>();
+
+      if (!episodeLikeError) {
+        hierarchyLiked.push(
+          ...((episodeLikeRows ?? [])
+            .map((item) => item.episode)
+            .filter((episode): episode is EpisodeRow => !!episode)
+            .map(normalizeEpisodeRow)
+            .filter((video): video is VideoData => video !== null)),
+        );
+      } else if (!isMissingTable(episodeLikeError)) {
+        console.warn("新しい階層データのいいね取得に失敗しました", episodeLikeError);
+      }
+
+      setPublishedVideos(mergeAndSortVideos(legacyPublished, hierarchyPublished));
+      setLikedVideos(mergeAndSortVideos(legacyLiked, hierarchyLiked));
     },
     [supabase],
   );
@@ -363,35 +542,157 @@ export default function ProfileDashboard() {
   );
 }
 
+function normalizeLegacyVideoRow(video: LegacyVideoRow): VideoData {
+  const rawSeriesTitle = video.series?.title_clean ?? video.series?.title_raw ?? video.series?.title ?? null;
+  const seriesTitle = rawSeriesTitle ? rawSeriesTitle.trim() : null;
+
+  return {
+    id: video.id,
+    title: video.title,
+    public_url: video.public_url,
+    thumbnail_url: video.thumbnail_url,
+    like_count: video.like_count,
+    view_count: video.view_count,
+    created_at: video.created_at,
+    series_id: video.series_id,
+    series_title: seriesTitle,
+    episode_number_int: null,
+    episode_number_str: null,
+    watchPath: `/videos/${video.id}`,
+    source: "legacy",
+  };
+}
+
+function normalizeEpisodeRow(episode: EpisodeRow): VideoData | null {
+  const videoFile = episode.video_file;
+  if (!videoFile) {
+    return null;
+  }
+
+  if (videoFile.visibility !== "PUBLIC" || videoFile.status !== "PUBLISHED") {
+    return null;
+  }
+
+  const series = episode.season?.series ?? null;
+  const seriesId = series?.id ?? null;
+  const rawSeriesTitle = series?.title_clean ?? series?.title_raw ?? null;
+  const seriesTitle = rawSeriesTitle ? rawSeriesTitle.trim() : null;
+
+  const title = (episode.title_clean ?? episode.title_raw ?? "").trim();
+  const safeTitle = title.length > 0 ? title : "タイトル未設定";
+  const likeCount = videoFile.like_count ?? 0;
+  const viewCount = videoFile.view_count ?? 0;
+  return {
+    id: episode.id,
+    title: safeTitle,
+    public_url: videoFile.public_url,
+    thumbnail_url: videoFile.thumbnail_url,
+    like_count: likeCount,
+    view_count: viewCount,
+    created_at: episode.created_at,
+    series_id: seriesId,
+    series_title: seriesTitle,
+    episode_number_int: episode.episode_number_int ?? null,
+    episode_number_str: episode.episode_number_str ?? null,
+    watchPath: null,
+    source: "hierarchy",
+  };
+}
+
+function mergeAndSortVideos(...lists: VideoData[][]): VideoData[] {
+  const map = new Map<string, VideoData>();
+
+  lists.flat().forEach((video) => {
+    if (!map.has(video.id)) {
+      map.set(video.id, video);
+    }
+  });
+
+  return Array.from(map.values()).sort((a, b) => {
+    const aTime = new Date(a.created_at).getTime();
+    const bTime = new Date(b.created_at).getTime();
+    return Number.isFinite(bTime) && Number.isFinite(aTime) ? bTime - aTime : 0;
+  });
+}
+
 function VideoList({ videos }: { videos: VideoData[] }) {
+  const groups = groupVideosBySeries(videos);
+
   return (
-    <ul className="profile-dashboard__video-list">
-      {videos.map((video) => (
-        <li key={video.id} className="profile-dashboard__video-card">
-          <Link href={`/videos/${video.id}`}>
-            <div className="profile-dashboard__video-thumb" aria-hidden>
-              {video.thumbnail_url ? (
-                <Image
-                  src={video.thumbnail_url}
-                  alt=""
-                  fill
-                  sizes="(max-width: 720px) 80vw, 320px"
-                  className="profile-dashboard__video-image"
-                />
-              ) : (
-                <span className="profile-dashboard__video-placeholder">サムネイルなし</span>
-              )}
-            </div>
-            <div className="profile-dashboard__video-body">
-              <h3>{video.title}</h3>
-              <p>
-                {video.view_count.toLocaleString()} 再生・{video.like_count.toLocaleString()} いいね
-              </p>
-            </div>
-          </Link>
-        </li>
+    <div className="profile-dashboard__series-list">
+      {groups.map((group) => (
+        <section key={group.key} className="profile-dashboard__series-group" aria-label={`${group.title}の動画一覧`}>
+          <div className="profile-dashboard__series-header">
+            <h3 className="profile-dashboard__series-title">{group.title}</h3>
+            <span className="profile-dashboard__series-count">{group.videos.length}本</span>
+          </div>
+          <ul className="profile-dashboard__video-list">
+            {group.videos.map((video) => (
+              <li key={video.id} className="profile-dashboard__video-card">
+                {video.watchPath ? (
+                  <Link href={video.watchPath}>
+                    <VideoListCardContent video={video} />
+                  </Link>
+                ) : (
+                  <a href={video.public_url} target="_blank" rel="noreferrer">
+                    <VideoListCardContent video={video} />
+                  </a>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
       ))}
-    </ul>
+    </div>
+  );
+}
+
+function groupVideosBySeries(videos: VideoData[]): VideoGroup[] {
+  const groups: VideoGroup[] = [];
+  const map = new Map<string, VideoGroup>();
+
+  videos.forEach((video) => {
+    const hasSeries = Boolean(video.series_id);
+    const key = hasSeries ? `series-${video.series_id}` : "standalone";
+    const title = hasSeries
+      ? video.series_title ?? "シリーズ名未設定"
+      : "シリーズ未設定";
+
+    if (!map.has(key)) {
+      const group: VideoGroup = { key, title, videos: [] };
+      map.set(key, group);
+      groups.push(group);
+    }
+
+    map.get(key)?.videos.push(video);
+  });
+
+  return groups;
+}
+
+function VideoListCardContent({ video }: { video: VideoData }) {
+  return (
+    <>
+      <div className="profile-dashboard__video-thumb" aria-hidden>
+        {video.thumbnail_url ? (
+          <Image
+            src={video.thumbnail_url}
+            alt=""
+            fill
+            sizes="(max-width: 720px) 50vw, 240px"
+            className="profile-dashboard__video-image"
+          />
+        ) : (
+          <span className="profile-dashboard__video-placeholder">サムネイルなし</span>
+        )}
+      </div>
+      <div className="profile-dashboard__video-body">
+        <h4 className="profile-dashboard__video-title">{video.title}</h4>
+        <p>
+          {video.view_count.toLocaleString()} 再生・{video.like_count.toLocaleString()} いいね
+        </p>
+      </div>
+    </>
   );
 }
 
