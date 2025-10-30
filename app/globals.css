@@ -1095,6 +1095,20 @@ a {
   color: rgba(31, 34, 46, 0.68);
 }
 
+.upload-form__notice {
+  font-size: 13px;
+  color: rgba(31, 34, 46, 0.6);
+  line-height: 1.5;
+}
+
+.upload-form__notice--center {
+  text-align: center;
+}
+
+.upload-form__notice--inline {
+  text-align: left;
+}
+
 .upload-form__content {
   display: grid;
   gap: 20px;
@@ -1432,6 +1446,17 @@ a {
   text-align: right;
 }
 
+.video-watch__edit {
+  color: rgba(217, 72, 140, 0.95);
+  border-color: rgba(217, 72, 140, 0.35);
+  background: rgba(217, 72, 140, 0.1);
+}
+
+.video-watch__edit:hover {
+  background: rgba(217, 72, 140, 0.15);
+  border-color: rgba(217, 72, 140, 0.5);
+}
+
 .video-watch__delete {
   color: rgba(240, 68, 56, 0.95);
   border-color: rgba(240, 68, 56, 0.35);
@@ -1457,6 +1482,169 @@ a {
   list-style: none;
   margin: 0;
   padding: 0;
+}
+
+.video-watch__editor-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(14, 17, 29, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  backdrop-filter: blur(2px);
+}
+
+.video-watch__editor {
+  width: min(640px, 100%);
+  max-height: 90vh;
+  background: #ffffff;
+  border-radius: 18px;
+  box-shadow: 0 28px 40px rgba(15, 18, 30, 0.18);
+  padding: 28px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.video-watch__editor-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0;
+  color: rgba(31, 34, 46, 0.95);
+}
+
+.video-watch__editor-error {
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: rgba(240, 68, 56, 0.08);
+  color: rgba(240, 68, 56, 0.95);
+  font-weight: 600;
+}
+
+.video-watch__editor-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.video-watch__editor-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(31, 34, 46, 0.8);
+}
+
+.video-watch__editor-field input,
+.video-watch__editor-field textarea {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid rgba(31, 34, 46, 0.18);
+  padding: 10px 12px;
+  font: inherit;
+  background: rgba(255, 255, 255, 0.92);
+  color: rgba(31, 34, 46, 0.95);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.video-watch__editor-field input:focus,
+.video-watch__editor-field textarea:focus {
+  outline: none;
+  border-color: rgba(138, 92, 255, 0.7);
+  box-shadow: 0 0 0 2px rgba(138, 92, 255, 0.18);
+}
+
+.video-watch__editor-field textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.video-watch__editor-thumbnail {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(31, 34, 46, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(247, 248, 251, 0.9);
+}
+
+.video-watch__editor-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.video-watch__editor-thumbnail-placeholder {
+  color: rgba(31, 34, 46, 0.55);
+  font-size: 14px;
+}
+
+.video-watch__editor-thumbnail-actions {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.video-watch__editor-file-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.video-watch__editor-file-button input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.video-watch__editor-remove {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: rgba(31, 34, 46, 0.7);
+}
+
+.video-watch__editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.video-watch__editor-divider {
+  height: 1px;
+  background: rgba(31, 34, 46, 0.1);
+  margin: 4px 0;
+}
+
+.video-watch__editor-danger {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.video-watch__editor-danger-text {
+  margin: 0;
+  font-size: 14px;
+  color: rgba(240, 68, 56, 0.85);
+  font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .video-watch__editor {
+    padding: 20px;
+    gap: 16px;
+  }
 }
 
 .video-watch__message {

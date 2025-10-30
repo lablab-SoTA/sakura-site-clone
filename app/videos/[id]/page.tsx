@@ -60,6 +60,7 @@ type VideoRecord = {
   width: number | null;
   height: number | null;
   created_at: string;
+  thumbnail_url: string | null;
 };
 
 type ProfileRecord = {
@@ -99,7 +100,7 @@ export default async function VideoPage({
   const { data: video, error } = await supabase
     .from("videos")
     .select(
-      "id, owner_id, series_id, title, description, tags, public_url, like_count, view_count, width, height, created_at",
+      "id, owner_id, series_id, title, description, tags, public_url, thumbnail_url, like_count, view_count, width, height, created_at",
     )
     .eq("id", id)
     .single<VideoRecord>();
@@ -199,6 +200,7 @@ export default async function VideoPage({
           width={video.width}
           height={video.height}
           tags={tags ?? []}
+          thumbnailUrl={video.thumbnail_url}
           episodeNumber={currentEpisode?.episodeNumber}
           episodeCount={totalEpisodes > 0 ? totalEpisodes : undefined}
           seriesId={series?.id}

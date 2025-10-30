@@ -746,6 +746,7 @@ export default function UploadForm() {
           <p className="upload-form__select-description">
             追加ボタンを押すとカメラロールが開きます。公開したい動画を選んで、詳細入力に進みましょう。
           </p>
+          <p className="upload-form__notice upload-form__notice--center">アップロードできる動画サイズの上限は50MBです。</p>
           <button type="button" className="button" onClick={openVideoPicker}>
             カメラロールを開く
           </button>
@@ -780,6 +781,7 @@ export default function UploadForm() {
                 動画を選び直す
               </button>
             </div>
+            <p className="upload-form__notice upload-form__notice--inline">アップロードできる動画サイズの上限は50MBです。</p>
           </section>
 
           {step === "details" ? (
