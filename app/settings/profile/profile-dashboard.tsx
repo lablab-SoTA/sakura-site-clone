@@ -379,7 +379,9 @@ export default function ProfileDashboard() {
   };
 
   const getPanelClassName = (tab: ActiveTab) => {
-    return `profile-dashboard__panel${activeTab === tab ? " profile-dashboard__panel--active" : " profile-dashboard__panel--inactive"}`;
+    const isActive = activeTab === tab;
+    const baseClass = "profile-dashboard__panel profile-dashboard__panel--animated";
+    return isActive ? `${baseClass} profile-dashboard__panel--active` : `${baseClass} profile-dashboard__panel--inactive`;
   };
 
   const displayName = useMemo(() => {

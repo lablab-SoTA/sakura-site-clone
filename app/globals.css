@@ -2338,13 +2338,16 @@ a {
   backdrop-filter: blur(12px);
   padding: clamp(18px, 5vw, 26px);
   overflow: hidden;
+}
+
+.profile-dashboard__panel--animated {
   opacity: 0;
   transform: translateY(14px);
   pointer-events: none;
   transition: opacity 0.28s ease, transform 0.36s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.profile-dashboard__panel--active {
+.profile-dashboard__panel--animated.profile-dashboard__panel--active {
   opacity: 1;
   transform: translateY(0);
   pointer-events: auto;
@@ -2352,7 +2355,7 @@ a {
   z-index: 2;
 }
 
-.profile-dashboard__panel--inactive {
+.profile-dashboard__panel--animated.profile-dashboard__panel--inactive {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -2389,7 +2392,7 @@ a {
 
 @media (prefers-reduced-motion: reduce) {
   .profile-dashboard__tab,
-  .profile-dashboard__panel {
+  .profile-dashboard__panel--animated {
     transition: none;
   }
 }
