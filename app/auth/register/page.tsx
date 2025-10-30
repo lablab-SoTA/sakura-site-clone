@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+
 import RegisterForm from "./register-form";
 
 export const metadata = {
@@ -10,7 +12,9 @@ export default function RegisterPage() {
       <div className="auth__panel">
         <h1 className="auth__title">アカウント登録</h1>
         <p className="auth__lead">メールアドレスとパスワードで登録します。</p>
-        <RegisterForm />
+        <Suspense fallback={null}>
+          <RegisterForm />
+        </Suspense>
       </div>
     </div>
   );

@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { getBrowserSupabaseClient } from "@/lib/supabase/client";
+import { resolveRedirectPath, DEFAULT_REDIRECT_PATH } from "@/lib/navigation";
 
 export default function LoginForm() {
   const supabase = getBrowserSupabaseClient();
@@ -15,9 +16,9 @@ export default function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const redirect = searchParams.get("redirectTo") ?? "/terms";
+  const redirect = resolveRedirectPath(searchParams.get("redirectTo"), DEFAULT_REDIRECT_PATH);
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
 
@@ -82,6 +83,11 @@ export default function LoginForm() {
         <span className="auth-form__hint-text">アカウントをお持ちでない場合は</span>
         <Link href="/auth/register" className="auth-form__hint-link">
           新規登録
+        </Link>
+      </p>
+      <p className="auth-form__hint">
+        <Link href={`/auth/forgot-password?redirectTo=${encodeURIComponent(redirect)}`} className="auth-form__hint-link">
+          パスワードをお忘れの方はこちら
         </Link>
       </p>
     </form>

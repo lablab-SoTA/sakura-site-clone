@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
 import { getBrowserSupabaseClient } from "@/lib/supabase/client";
@@ -30,7 +30,7 @@ export default function TermsForm({ version }: TermsFormProps) {
     setState((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!state.noRepost || !state.mosaic || !state.adult) {
@@ -45,6 +45,12 @@ export default function TermsForm({ version }: TermsFormProps) {
 
     if (!data.session) {
       setError("同意にはログインが必要です。ログイン後に再度お試しください。");
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!data.session.user.email_confirmed_at) {
+      setError("メールアドレスの確認が完了していません。受信メールのリンクを開くか、再送信してください。");
       setIsSubmitting(false);
       return;
     }

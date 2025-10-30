@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
   type ChangeEvent,
+  type ReactNode,
 } from "react";
 
 import { getBrowserSupabaseClient } from "@/lib/supabase/client";
@@ -95,7 +96,7 @@ export default function VideoWatch({
   const [likeState, setLikeState] = useState<LikeState>("unknown");
   const [likeCount, setLikeCount] = useState(initialLikeCount);
   const [viewCount, setViewCount] = useState(initialViewCount);
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<ReactNode>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [isTogglingLike, setIsTogglingLike] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
@@ -288,7 +289,16 @@ export default function VideoWatch({
 
   const handleToggleLike = useCallback(async () => {
     if (!accessToken) {
-      setMessage("いいねするにはログインが必要です。");
+      setMessage(
+        <span>
+          いいねするには
+          {" "}
+          <Link href="/auth/login" style={{ textDecoration: "underline" }}>
+            ログイン
+          </Link>
+          {" "}が必要です。
+        </span>,
+      );
       return;
     }
 

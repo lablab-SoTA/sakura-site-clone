@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react
 import type { PostgrestError } from "@supabase/supabase-js";
 
 import ProfileForm from "./profile-form";
+import ChangePasswordForm from "./change-password-form";
 import { getBrowserSupabaseClient } from "@/lib/supabase/client";
 
 type ProfileData = {
@@ -144,6 +145,7 @@ export default function ProfileDashboard() {
   const [publishedVideos, setPublishedVideos] = useState<VideoData[]>([]);
   const [likedVideos, setLikedVideos] = useState<VideoData[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
+  const [joinedAt, setJoinedAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ActiveTab>("published");
   const [isEditorOpen, setIsEditorOpen] = useState(false);
@@ -321,6 +323,7 @@ export default function ProfileDashboard() {
 
       const targetUserId = data.session.user.id;
       setUserId(targetUserId);
+      setJoinedAt(data.session.user.created_at ?? null);
 
       try {
         await loadData(targetUserId);
@@ -357,7 +360,7 @@ export default function ProfileDashboard() {
   const handleLogout = useCallback(async () => {
     setLogoutError(null);
     setIsLoggingOut(true);
-    const { error: signOutError } = await supabase.auth.signOut();
+    const { error: signOutError } = await supabase.auth.signOut({ scope: "global" });
     setIsLoggingOut(false);
 
     if (signOutError) {
@@ -369,8 +372,21 @@ export default function ProfileDashboard() {
   }, [router, supabase]);
 
   const handleTabChange = (tab: ActiveTab) => {
+    if (tab === activeTab) {
+      return;
+    }
     setActiveTab(tab);
   };
+
+  const getPanelClassName = (tab: ActiveTab) => {
+    return `profile-dashboard__panel${activeTab === tab ? " profile-dashboard__panel--active" : " profile-dashboard__panel--inactive"}`;
+  };
+
+  const displayName = useMemo(() => {
+    const raw = profile?.display_name ?? "";
+    const trimmed = raw.trim();
+    return trimmed.length > 0 ? trimmed : "匿名クリエイター";
+  }, [profile]);
 
   const snsLinks = useMemo(() => {
     if (!profile) {
@@ -388,6 +404,32 @@ export default function ProfileDashboard() {
     }
     return links;
   }, [profile]);
+
+  const formattedJoinedAt = useMemo(() => {
+    if (!joinedAt) {
+      return null;
+    }
+    const date = new Date(joinedAt);
+    if (Number.isNaN(date.getTime())) {
+      return null;
+    }
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}/${month}/${day}`;
+  }, [joinedAt]);
+
+  const totalViewCount = useMemo(() => {
+    return publishedVideos.reduce((total, video) => {
+      return total + (video.view_count ?? 0);
+    }, 0);
+  }, [publishedVideos]);
+
+  const totalLikeCount = useMemo(() => {
+    return publishedVideos.reduce((total, video) => {
+      return total + (video.like_count ?? 0);
+    }, 0);
+  }, [publishedVideos]);
 
   if (viewState === "loading") {
     return (
@@ -419,38 +461,54 @@ export default function ProfileDashboard() {
   return (
     <div className="profile-dashboard">
       <section className="profile-dashboard__header">
-        <button type="button" className="profile-dashboard__avatar" onClick={handleOpenEditor} aria-label="プロフィールを編集">
-          {profile?.avatar_url ? (
-            <Image src={profile.avatar_url} alt="プロフィール画像" fill sizes="144px" />
-          ) : (
-            <span>{profile?.display_name?.[0]?.toUpperCase() ?? "?"}</span>
-          )}
-        </button>
-        <div className="profile-dashboard__meta">
-          <h1 className="profile-dashboard__name">{profile?.display_name ?? "匿名クリエイター"}</h1>
-          {snsLinks.length > 0 && (
-            <ul className="profile-dashboard__sns" aria-label="SNSリンク">
-              {snsLinks.map((item) => (
-                <li key={item.key}>
-                  <Link href={item.href} target="_blank" rel="noreferrer" aria-label={getSnsLabel(item.key)}>
-                    {snsIcons[item.key]}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-          {profile?.bio ? (
-            <p className="profile-dashboard__bio">{profile.bio}</p>
-          ) : (
-            <p className="profile-dashboard__bio profile-dashboard__bio--muted">自己紹介はまだ設定されていません。</p>
-          )}
-          <div className="profile-dashboard__actions">
-            <button type="button" className="button" onClick={handleOpenEditor}>
-              プロフィールを変更
-            </button>
+        <div className="profile-dashboard__header-content">
+          <button
+            type="button"
+            className="profile-dashboard__avatar"
+            onClick={handleOpenEditor}
+            aria-label="プロフィールを編集"
+          >
+            {profile?.avatar_url ? (
+              <Image src={profile.avatar_url} alt="プロフィール画像" fill sizes="144px" />
+            ) : (
+              <span>{displayName.trim().charAt(0).toUpperCase() || "?"}</span>
+            )}
+          </button>
+          <div className="profile-dashboard__meta">
+            <div className="profile-dashboard__header-row">
+              <div className="profile-dashboard__identity">
+                <h1 className="profile-dashboard__name">{displayName}</h1>
+                <p className="profile-dashboard__stat-line">
+                  {formattedJoinedAt && <span>登録日 {formattedJoinedAt}</span>}
+                  <span>総再生数 {totalViewCount.toLocaleString()}</span>
+                  <span>いいね {totalLikeCount.toLocaleString()}</span>
+                </p>
+              </div>
+              {snsLinks.length > 0 && (
+                <ul className="profile-dashboard__sns" aria-label="SNSリンク">
+                  {snsLinks.map((item) => (
+                    <li key={item.key}>
+                      <Link href={item.href} target="_blank" rel="noreferrer" aria-label={getSnsLabel(item.key)}>
+                        {snsIcons[item.key]}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            {profile?.bio ? (
+              <p className="profile-dashboard__bio">{profile.bio}</p>
+            ) : (
+              <p className="profile-dashboard__bio profile-dashboard__bio--muted">自己紹介はまだ設定されていません。</p>
+            )}
+            <div className="profile-dashboard__actions">
+              <button type="button" className="button" onClick={handleOpenEditor}>
+                プロフィールを変更
+              </button>
+            </div>
           </div>
-          {error && <p className="profile-dashboard__error">{error}</p>}
         </div>
+        {error && <p className="profile-dashboard__error">{error}</p>}
       </section>
 
       <section className="profile-dashboard__collections">
@@ -478,34 +536,38 @@ export default function ProfileDashboard() {
         </div>
         <div className="profile-dashboard__panels">
           <div
-            className="profile-dashboard__panel"
+            className={getPanelClassName("published")}
             role="tabpanel"
             id="profile-dashboard-tabpanel-published"
             aria-hidden={activeTab !== "published"}
-            hidden={activeTab !== "published"}
+            tabIndex={activeTab === "published" ? 0 : -1}
           >
-            {activeTab === "published" &&
-              (publishedVideos.length > 0 ? (
-                <VideoList videos={publishedVideos} />
-              ) : (
-                <p className="profile-dashboard__empty">公開した作品はまだありません。</p>
-              ))}
+            {publishedVideos.length > 0 ? (
+              <VideoList videos={publishedVideos} />
+            ) : (
+              <p className="profile-dashboard__empty">公開した作品はまだありません。</p>
+            )}
           </div>
           <div
-            className="profile-dashboard__panel"
+            className={getPanelClassName("liked")}
             role="tabpanel"
             id="profile-dashboard-tabpanel-liked"
             aria-hidden={activeTab !== "liked"}
-            hidden={activeTab !== "liked"}
+            tabIndex={activeTab === "liked" ? 0 : -1}
           >
-            {activeTab === "liked" &&
-              (likedVideos.length > 0 ? (
-                <VideoList videos={likedVideos} />
-              ) : (
-                <p className="profile-dashboard__empty">いいねした作品はまだありません。</p>
-              ))}
+            {likedVideos.length > 0 ? (
+              <VideoList videos={likedVideos} />
+            ) : (
+              <p className="profile-dashboard__empty">いいねした作品はまだありません。</p>
+            )}
           </div>
         </div>
+      </section>
+
+      <section className="profile-dashboard__panel" aria-label="パスワード設定">
+        <h2 className="profile-dashboard__panel-heading">パスワード設定</h2>
+        <p className="profile-dashboard__panel-note">現在のパスワードを確認のうえ、新しいパスワードに変更できます。</p>
+        <ChangePasswordForm />
       </section>
 
       <section className="profile-dashboard__logout" aria-label="アカウント操作">

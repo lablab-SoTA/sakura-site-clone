@@ -75,6 +75,7 @@ export default function UploadForm() {
   const supabase = getBrowserSupabaseClient();
   const [sessionUserId, setSessionUserId] = useState<string | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [isEmailConfirmed, setIsEmailConfirmed] = useState<boolean | null>(null);
   const [seriesOptions, setSeriesOptions] = useState<SeriesOption[]>([]);
   const [seasonOptions, setSeasonOptions] = useState<SeasonOption[]>([]);
   const [type, setType] = useState<UploadType>("new-series");
@@ -128,6 +129,7 @@ export default function UploadForm() {
           console.error("ログイン状態の取得に失敗しました", sessionError);
           setSessionUserId(null);
           setAccessToken(null);
+          setIsEmailConfirmed(null);
           setError("ログイン状態の確認に失敗しました。時間をおいて再度お試しください。");
           return;
         }
@@ -135,10 +137,12 @@ export default function UploadForm() {
         if (data.session) {
           setSessionUserId(data.session.user.id);
           setAccessToken(data.session.access_token);
+          setIsEmailConfirmed(Boolean(data.session.user.email_confirmed_at));
           setError(null);
         } else {
           setSessionUserId(null);
           setAccessToken(null);
+          setIsEmailConfirmed(null);
           setError(null);
         }
       } catch (unknownError) {
@@ -159,14 +163,15 @@ export default function UploadForm() {
     setup();
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      try {
-        setSessionUserId(session ? session.user.id : null);
-        setAccessToken(session ? session.access_token : null);
-        if (!session) {
-          setError(null);
-          setMessage(null);
-          setSeriesOptions([]);
-          setSeasonOptions([]);
+        try {
+          setSessionUserId(session ? session.user.id : null);
+          setAccessToken(session ? session.access_token : null);
+          setIsEmailConfirmed(session ? Boolean(session.user.email_confirmed_at) : null);
+          if (!session) {
+            setError(null);
+            setMessage(null);
+            setSeriesOptions([]);
+            setSeasonOptions([]);
           setSeriesId("");
           setSeasonId("");
           setNewSeriesTitleRaw("");
@@ -716,6 +721,28 @@ export default function UploadForm() {
           </Link>
           <Link href={`/auth/register?redirectTo=${redirectTo}`} className="button button--ghost">
             新規登録
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (isEmailConfirmed === false) {
+    const redirectToUpload = encodeURIComponent("/upload");
+    return (
+      <div className="auth-required">
+        <p className="auth-required__message">
+          メールアドレスの確認が完了していません。受信ボックスに届いた確認メール内のリンクを開いてください。
+        </p>
+        <p className="auth-required__message">
+          メールが見つからない場合は、下のボタンから確認メールを再送するか、新しい再設定メールを送信できます。
+        </p>
+        <div className="auth-required__actions">
+          <Link href={`/auth/register?redirectTo=${redirectToUpload}`} className="button">
+            確認メールを再送
+          </Link>
+          <Link href={`/auth/forgot-password?redirectTo=${redirectToUpload}`} className="button button--ghost">
+            再設定メールを送る
           </Link>
         </div>
       </div>
