@@ -1439,6 +1439,9 @@ a {
   gap: 8px;
   color: rgba(204, 62, 255, 0.8);
   font-weight: 600;
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 .video-watch__message {
