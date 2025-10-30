@@ -376,17 +376,19 @@ export default function VideoWatch({
           </p>
         </div>
         <div className="video-watch__actions">
-          <button
-            type="button"
-            className={`video-watch__like button ${likeState === "liked" ? "video-watch__like--active" : ""}`}
-            onClick={handleToggleLike}
-            disabled={likeState === "unknown" || isTogglingLike}
-          >
-            {likeLabel}
-          </button>
-          <a href={`/report/${videoId}`} className="video-watch__report">
-            通報する
-          </a>
+          <div className="video-watch__action-group">
+            <button
+              type="button"
+              className={`video-watch__like button ${likeState === "liked" ? "video-watch__like--active" : ""}`}
+              onClick={handleToggleLike}
+              disabled={likeState === "unknown" || isTogglingLike}
+            >
+              {likeLabel}
+            </button>
+            <a href={`/report/${videoId}`} className="video-watch__report">
+              通報する
+            </a>
+          </div>
           {isOwner && (
             <button
               type="button"

@@ -13,18 +13,34 @@ type Highlight = {
   episode: AnimeEpisode;
 };
 
-type MainSectionProps = {
-  heroSlides: Highlight[];
-  featuredEpisodes: Highlight[];
-  contentEpisodes: Highlight[];
+type SeriesHighlight = {
+  anime: Anime;
+  primaryEpisode?: AnimeEpisode;
+  totalViews: number;
 };
 
-export default function MainSection({ heroSlides, featuredEpisodes, contentEpisodes }: MainSectionProps) {
-  if (heroSlides.length === 0 && featuredEpisodes.length === 0 && contentEpisodes.length === 0) {
+type MainSectionProps = {
+  heroSlides: Highlight[];
+  popularSeries: SeriesHighlight[];
+  popularEpisodes: Highlight[];
+  allContent: Highlight[];
+};
+
+export default function MainSection({
+  heroSlides,
+  popularSeries,
+  popularEpisodes,
+  allContent,
+}: MainSectionProps) {
+  if (
+    heroSlides.length === 0 &&
+    popularSeries.length === 0 &&
+    popularEpisodes.length === 0 &&
+    allContent.length === 0
+  ) {
     return null;
   }
 
-  const railEpisodes = featuredEpisodes.length > 0 ? featuredEpisodes : heroSlides;
   const renderEpisodeCards = (items: Highlight[], keySuffix: string) =>
     items.map(({ anime, episode }) => {
       const posterSrc = episode.video.poster || anime.thumbnail || XANIME_THUMB_PLACEHOLDER;
@@ -33,7 +49,7 @@ export default function MainSection({ heroSlides, featuredEpisodes, contentEpiso
         <Link
           key={`${anime.slug}-${episode.id}-${keySuffix}`}
           href={`/videos/${episode.id}`}
-          className={styles.episodeCard}
+          className={styles.card}
           aria-label={`${anime.title} ${episode.title} を再生する`}
         >
           <div className={styles.thumb}>
@@ -54,6 +70,38 @@ export default function MainSection({ heroSlides, featuredEpisodes, contentEpiso
       );
     });
 
+  const renderSeriesCards = (items: SeriesHighlight[]) =>
+    items.map(({ anime, primaryEpisode, totalViews }) => {
+      const posterSrc = primaryEpisode?.video.poster || anime.thumbnail || XANIME_THUMB_PLACEHOLDER;
+      const episodeCount = anime.episodes.length;
+      return (
+        <Link
+          key={anime.slug}
+          href={`/watch/${anime.slug}`}
+          className={styles.card}
+          aria-label={`${anime.title} を視聴する`}
+        >
+          <div className={styles.thumb}>
+            <Image
+              src={posterSrc}
+              alt={`${anime.title}のサムネイル`}
+              fill
+              className={styles.thumbImage}
+              sizes="(max-width: 600px) 180px, 240px"
+            />
+          </div>
+          <div className={styles.cardBody}>
+            <p className={styles.series}>{anime.title}</p>
+            <p className={styles.episodeTitle}>{primaryEpisode?.title ?? "エピソード"}</p>
+            <p className={styles.seriesMeta}>
+              <span>全{episodeCount}話</span>
+              <span>▶ {formatNumberJP(totalViews)}</span>
+            </p>
+          </div>
+        </Link>
+      );
+    });
+
   return (
     <section className={styles.root}>
       {heroSlides.length > 0 && (
@@ -62,31 +110,39 @@ export default function MainSection({ heroSlides, featuredEpisodes, contentEpiso
         </div>
       )}
 
-      {railEpisodes.length > 0 && (
-        <section className={styles.episodeSection} aria-labelledby="popular-episodes-heading">
+      {popularSeries.length > 0 && (
+        <section className={styles.cardSection} aria-labelledby="popular-series-heading">
+          <header className={styles.sectionHeader}>
+            <h2 id="popular-series-heading" className={styles.sectionTitle}>
+              人気のシリーズ
+            </h2>
+            <p className={styles.sectionLead}>総再生数が多いシリーズ作品をピックアップしました。</p>
+          </header>
+          <div className={styles.cardRail}>{renderSeriesCards(popularSeries)}</div>
+        </section>
+      )}
+
+      {popularEpisodes.length > 0 && (
+        <section className={styles.cardSection} aria-labelledby="popular-episodes-heading">
           <header className={styles.sectionHeader}>
             <h2 id="popular-episodes-heading" className={styles.sectionTitle}>
               人気のエピソード
             </h2>
-            <p className={styles.sectionLead}>再生回数の多い人気エピソードをピックアップしました。</p>
+            <p className={styles.sectionLead}>再生回数の多いエピソードをまとめてご紹介します。</p>
           </header>
-          <div className={styles.episodeRail}>
-            {renderEpisodeCards(railEpisodes, "rail")}
-          </div>
+          <div className={styles.cardRail}>{renderEpisodeCards(popularEpisodes, "popular")}</div>
         </section>
       )}
 
-      {contentEpisodes.length > 0 && (
-        <section className={styles.episodeSection} aria-labelledby="all-content-heading">
+      {allContent.length > 0 && (
+        <section className={styles.cardSection} aria-labelledby="all-content-heading">
           <header className={styles.sectionHeader}>
             <h2 id="all-content-heading" className={styles.sectionTitle}>
-              コンテンツ
+              コンテンツ（全て）
             </h2>
             <p className={styles.sectionLead}>公開中のすべてのコンテンツを一覧でご覧いただけます。</p>
           </header>
-          <div className={styles.episodeRail}>
-            {renderEpisodeCards(contentEpisodes, "content")}
-          </div>
+          <div className={styles.cardRail}>{renderEpisodeCards(allContent, "all")}</div>
         </section>
       )}
     </section>

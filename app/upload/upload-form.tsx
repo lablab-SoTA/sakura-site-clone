@@ -48,6 +48,29 @@ function sanitizeObjectKey(rawName: string, fallback: string) {
   return `${safeBase}${safeExtension}`;
 }
 
+function normalizeSelectedFile(file: File | null, fallback: string): File | null {
+  if (!file) {
+    return null;
+  }
+
+  const safeName = sanitizeObjectKey(file.name, fallback);
+  if (safeName === file.name) {
+    return file;
+  }
+
+  try {
+    return new File([file], safeName, {
+      type: file.type,
+      lastModified: file.lastModified,
+    });
+  } catch {
+    const blob = file.slice(0, file.size, file.type);
+    return new File([blob], safeName, {
+      type: file.type,
+    });
+  }
+}
+
 export default function UploadForm() {
   const supabase = getBrowserSupabaseClient();
   const [sessionUserId, setSessionUserId] = useState<string | null>(null);
@@ -327,7 +350,8 @@ export default function UploadForm() {
 
   const handleVideoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const nextFile = event.target.files?.[0] ?? null;
-    setFile(nextFile);
+    const normalizedFile = normalizeSelectedFile(nextFile, "video");
+    setFile(normalizedFile);
     setError(null);
     setMessage(null);
     setStep("details");
@@ -335,7 +359,8 @@ export default function UploadForm() {
 
   const handleThumbnailChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const nextFile = event.target.files?.[0] ?? null;
-    setThumbnailFile(nextFile);
+    const normalizedFile = normalizeSelectedFile(nextFile, "thumbnail");
+    setThumbnailFile(normalizedFile);
     setError(null);
   };
 

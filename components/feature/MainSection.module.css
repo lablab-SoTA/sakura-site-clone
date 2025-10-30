@@ -11,7 +11,7 @@
   width: 100%;
 }
 
-.episodeSection {
+.cardSection {
   display: grid;
   gap: 18px;
 }
@@ -37,7 +37,7 @@
   color: var(--muted);
 }
 
-.episodeRail {
+.cardRail {
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: clamp(172px, 56vw, 186px);
@@ -50,11 +50,11 @@
   scrollbar-width: none;
 }
 
-.episodeRail::-webkit-scrollbar {
+.cardRail::-webkit-scrollbar {
   display: none;
 }
 
-.episodeCard {
+.card {
   position: relative;
   display: grid;
   gap: 12px;
@@ -69,15 +69,15 @@
   scroll-snap-align: start;
 }
 
-.episodeCard:hover,
-.episodeCard:focus-visible {
+.card:hover,
+.card:focus-visible {
   transform: translateY(-4px);
   box-shadow: 0 24px 48px rgba(31, 34, 46, 0.16);
   border-color: rgba(255, 120, 183, 0.35);
   outline: none;
 }
 
-.episodeCard:focus-visible {
+.card:focus-visible {
   box-shadow:
     0 0 0 3px rgba(255, 120, 183, 0.28),
     0 16px 42px rgba(31, 34, 46, 0.2);
@@ -122,12 +122,22 @@
   font-family: var(--font-body, inherit);
 }
 
+.seriesMeta {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: clamp(0.72rem, 2.9vw, 0.78rem);
+  color: var(--muted);
+  font-family: var(--font-body, inherit);
+}
+
 @media (min-width: 600px) {
   .heroRegion {
     margin-inline: 0;
   }
 
-  .episodeRail {
+  .cardRail {
     margin-inline: 0;
     padding: 20px 0 0;
     overflow: visible;
@@ -141,7 +151,7 @@
     padding-inline: 0;
   }
 
-  .episodeCard {
+  .card {
     height: 100%;
   }
 
@@ -151,7 +161,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .episodeCard {
+  .card {
     transition: none;
   }
 }
