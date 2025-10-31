@@ -1,4 +1,5 @@
-import FeedViewer, { type FeedViewerItem } from "@/components/feed/FeedViewer";
+import FeedVerticalViewer from "@/components/feed/FeedVerticalViewer";
+import { type FeedViewerItem } from "@/components/feed/FeedViewer";
 
 import { fetchAnimeList, isPortraitAnime } from "@/lib/anime";
 import { XANIME_THUMB_PLACEHOLDER } from "@/lib/placeholders";
@@ -76,7 +77,7 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
 
   return (
     <div className="feed-page">
-      <FeedViewer items={items} initialId={start ?? null} />
+      <FeedVerticalViewer items={items} initialId={start ?? null} />
     </div>
   );
 }
