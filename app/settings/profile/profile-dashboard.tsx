@@ -505,7 +505,7 @@ export default function ProfileDashboard() {
               <p className="profile-dashboard__bio profile-dashboard__bio--muted">自己紹介はまだ設定されていません。</p>
             )}
             <div className="profile-dashboard__actions">
-              <button type="button" className="button" onClick={handleOpenEditor}>
+              <button type="button" className="button profile-dashboard__edit-button" onClick={handleOpenEditor}>
                 プロフィールを変更
               </button>
             </div>

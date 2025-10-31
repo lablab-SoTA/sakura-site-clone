@@ -2371,6 +2371,20 @@ a {
   margin-top: 4px;
 }
 
+.profile-dashboard__edit-button {
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  opacity: 0.7;
+  box-shadow: 0 4px 12px rgba(255, 120, 183, 0.2);
+}
+
+.profile-dashboard__edit-button:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(255, 120, 183, 0.25);
+}
+
 .profile-dashboard__error {
   color: #f04438;
   font-size: 14px;
@@ -2547,8 +2561,9 @@ a {
   }
 
   .profile-dashboard__actions {
-    justify-content: center;
+    justify-content: flex-start;
     margin-top: 6px;
+    padding-left: clamp(16px, 4vw, 24px);
   }
 
   .profile-dashboard__collections {
