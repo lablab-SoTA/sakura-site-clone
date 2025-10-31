@@ -1,0 +1,293 @@
+.root {
+  display: grid;
+  gap: clamp(32px, 7vw, 48px);
+  padding-block: clamp(12px, 5vw, 36px);
+}
+
+.hero {
+  display: grid;
+  gap: clamp(18px, 5vw, 24px);
+}
+
+.heroVisual {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: clamp(18px, 6vw, 28px);
+  overflow: hidden;
+  background: rgba(12, 14, 22, 0.16);
+  box-shadow: 0 28px 56px rgba(12, 14, 22, 0.28);
+}
+
+.heroImage {
+  object-fit: cover;
+}
+
+.heroBody {
+  display: grid;
+  gap: clamp(12px, 4vw, 18px);
+}
+
+.heroLabel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(28, 31, 44, 0.12);
+  font-weight: 600;
+  font-size: clamp(0.78rem, 3vw, 0.9rem);
+}
+
+.heroTitle {
+  margin: 0;
+  font-size: clamp(1.6rem, 6vw, 2.1rem);
+  font-weight: 800;
+  line-height: 1.22;
+}
+
+.heroMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  font-size: clamp(0.85rem, 3.4vw, 0.98rem);
+  color: var(--muted);
+}
+
+.heroCreator {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: inherit;
+}
+
+.heroAvatar,
+.heroAvatarPlaceholder {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--fg);
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+
+.heroAvatar img {
+  object-fit: cover;
+}
+
+.heroDescription {
+  margin: 0;
+  font-size: clamp(0.95rem, 3.4vw, 1.05rem);
+  line-height: 1.7;
+  color: var(--muted);
+}
+
+.heroAction {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 22px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: clamp(0.95rem, 3.6vw, 1.05rem);
+  background: linear-gradient(135deg, rgba(255, 120, 183, 0.95), rgba(130, 127, 255, 0.9));
+  color: #fff;
+  box-shadow: 0 18px 36px rgba(255, 120, 183, 0.32);
+  transition: transform var(--dur-fast, 150ms) var(--ease-standard, ease);
+}
+
+.heroAction:hover {
+  transform: translateY(-2px);
+}
+
+.main {
+  display: grid;
+  gap: clamp(32px, 7vw, 48px);
+}
+
+.sectionHeader {
+  display: grid;
+  gap: 6px;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: clamp(1.3rem, 5vw, 1.6rem);
+  font-weight: 700;
+}
+
+.sectionLead {
+  margin: 0;
+  color: var(--muted);
+  font-size: clamp(0.85rem, 3.4vw, 0.95rem);
+}
+
+.episodeSection {
+  display: grid;
+  gap: clamp(18px, 5vw, 24px);
+}
+
+.episodeList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: clamp(12px, 3.6vw, 16px);
+}
+
+.episodeItem {
+  margin: 0;
+}
+
+.episodeCard {
+  display: grid;
+  grid-template-columns: minmax(120px, 160px) 1fr auto;
+  gap: 14px;
+  align-items: center;
+  padding: clamp(12px, 3vw, 16px);
+  border-radius: 18px;
+  border: 1px solid rgba(28, 31, 44, 0.12);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 18px 42px rgba(12, 14, 22, 0.14);
+  text-decoration: none;
+  color: inherit;
+  transition: transform var(--dur-fast, 150ms) var(--ease-standard, ease),
+    box-shadow var(--dur-fast, 150ms) var(--ease-standard, ease);
+}
+
+.episodeCardActive {
+  border-color: rgba(217, 72, 140, 0.45);
+  box-shadow: 0 26px 52px rgba(217, 72, 140, 0.22);
+}
+
+.episodeCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 24px 48px rgba(12, 14, 22, 0.2);
+}
+
+.episodeThumb {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(12, 14, 22, 0.08);
+}
+
+.episodeImage {
+  object-fit: cover;
+}
+
+.episodeBody {
+  display: grid;
+  gap: 6px;
+}
+
+.episodeNumber {
+  font-weight: 700;
+  font-size: clamp(0.9rem, 3.2vw, 1rem);
+  color: var(--muted);
+}
+
+.episodeTitle {
+  font-size: clamp(1rem, 3.6vw, 1.12rem);
+  font-weight: 700;
+}
+
+.episodeMeta {
+  font-size: clamp(0.82rem, 3vw, 0.92rem);
+  color: var(--muted);
+}
+
+.episodeChevron {
+  font-size: 1.4rem;
+  color: rgba(28, 31, 44, 0.3);
+}
+
+.recommendSection {
+  display: grid;
+  gap: clamp(18px, 5vw, 24px);
+}
+
+.recommendGrid {
+  display: grid;
+  gap: clamp(14px, 3.6vw, 20px);
+}
+
+.recommendCard {
+  display: grid;
+  gap: 12px;
+  padding: clamp(12px, 3vw, 16px);
+  border-radius: 18px;
+  border: 1px solid rgba(28, 31, 44, 0.1);
+  background: rgba(255, 255, 255, 0.92);
+  text-decoration: none;
+  color: inherit;
+  box-shadow: 0 18px 36px rgba(12, 14, 22, 0.12);
+  transition: transform var(--dur-fast, 150ms) var(--ease-standard, ease),
+    box-shadow var(--dur-fast, 150ms) var(--ease-standard, ease);
+}
+
+.recommendCard:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 24px 46px rgba(12, 14, 22, 0.18);
+}
+
+.recommendThumb {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(12, 14, 22, 0.08);
+}
+
+.recommendImage {
+  object-fit: cover;
+}
+
+.recommendBody {
+  display: grid;
+  gap: 6px;
+}
+
+.recommendTitle {
+  font-size: clamp(1rem, 3.4vw, 1.1rem);
+  font-weight: 700;
+}
+
+.recommendMeta {
+  font-size: clamp(0.82rem, 3vw, 0.9rem);
+  color: var(--muted);
+}
+
+@media (min-width: 900px) {
+  .hero {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    align-items: center;
+    gap: clamp(32px, 4vw, 48px);
+  }
+
+  .recommendGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .episodeList {
+    gap: 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heroAction,
+  .episodeCard,
+  .recommendCard {
+    transition: none;
+  }
+}

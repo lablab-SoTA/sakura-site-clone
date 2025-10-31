@@ -39,7 +39,9 @@ export async function POST(request: Request) {
   // エピソードを通じてシリーズの所有者を確認
   const { data: episode } = await supabase
     .from("episodes")
-    .select("season_id")
+    .select(
+      "id, season_id, title_raw, title_clean, description, tags, thumbnail_url, duration_sec, created_at",
+    )
     .eq("id", body.episode_id)
     .maybeSingle();
 
@@ -92,6 +94,50 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "動画ファイルの登録に失敗しました。" }, { status: 500 });
   }
 
+  const cleanTitle = episode.title_clean?.trim() ?? "";
+  const rawTitle = episode.title_raw?.trim() ?? "";
+  const normalizedTitle = cleanTitle.length > 0 ? cleanTitle : rawTitle;
+  const episodeTags = Array.isArray(episode.tags)
+    ? episode.tags
+        .map((tag) => (typeof tag === "string" ? tag.trim() : ""))
+        .filter((tag) => tag.length > 0)
+    : [];
+  const tagCsv = episodeTags.length > 0 ? episodeTags.join(",") : null;
+  const nowIso = new Date().toISOString();
+
+  const { error: syncError } = await supabase
+    .from("videos")
+    .upsert(
+      {
+        id: episode.id,
+        owner_id: user.id,
+        series_id: season.series_id,
+        title: normalizedTitle.length > 0 ? normalizedTitle : rawTitle,
+        description: episode.description ?? null,
+        tags: tagCsv,
+        is_adult: body.is_adult,
+        mosaic_confirmed: body.mosaic_confirmed,
+        no_repost: body.no_repost,
+        visibility: body.visibility ?? "PUBLIC",
+        status: body.status ?? "PUBLISHED",
+        file_path: body.file_path,
+        public_url: body.public_url,
+        duration_sec: body.duration_sec ?? episode.duration_sec ?? null,
+        width: body.width ?? null,
+        height: body.height ?? null,
+        thumbnail_url: body.thumbnail_url ?? episode.thumbnail_url ?? null,
+        created_at: episode.created_at ?? nowIso,
+        updated_at: nowIso,
+        published_at: episode.created_at ?? nowIso,
+      },
+      { onConflict: "id" },
+    );
+
+  if (syncError) {
+    console.error("動画レコードの同期に失敗しました:", syncError);
+    await supabase.from("video_files").delete().eq("id", data.id).catch(() => undefined);
+    return NextResponse.json({ message: "動画情報の同期に失敗しました。" }, { status: 500 });
+  }
+
   return NextResponse.json({ video_file: data });
 }
-

@@ -14,7 +14,8 @@ import { getBrowserSupabaseClient } from "@/lib/supabase/client";
 import { generateSeriesSlug, generateSeasonSlug, generateEpisodeSlug, normalizeTitle, generateEpisodeNumberStr } from "@/lib/utils/slug";
 import type { EpisodeType } from "@/lib/types/hierarchy";
 
-type UploadType = "new-series" | "existing-series";
+type UploadTarget = "feed" | "series";
+type SeriesUploadMode = "new-series" | "existing-series";
 
 type SeriesOption = {
   id: string;
@@ -78,7 +79,8 @@ export default function UploadForm() {
   const [isEmailConfirmed, setIsEmailConfirmed] = useState<boolean | null>(null);
   const [seriesOptions, setSeriesOptions] = useState<SeriesOption[]>([]);
   const [seasonOptions, setSeasonOptions] = useState<SeasonOption[]>([]);
-  const [type, setType] = useState<UploadType>("new-series");
+  const [target, setTarget] = useState<UploadTarget>("feed");
+  const [seriesMode, setSeriesMode] = useState<SeriesUploadMode>("new-series");
   const [seriesId, setSeriesId] = useState<string>("");
   const [seasonId, setSeasonId] = useState<string>("");
   
@@ -205,18 +207,40 @@ export default function UploadForm() {
         return;
       }
 
-      const { data, error } = await supabase
-        .from("series")
-        .select("id, title_clean, slug")
-        .eq("owner_id", sessionUserId)
-        .order("created_at", { ascending: false });
+      const candidates = [
+        "id, title_clean, slug", 
+        "id, title_clean", 
+        "id, title", 
+        "id, name"
+      ];
 
-      if (error) {
-        console.error("シリーズの取得に失敗しました", error);
-        return;
+      for (const fields of candidates) {
+        const { data, error } = await supabase
+          .from("series")
+          .select(fields)
+          .eq("owner_id", sessionUserId)
+          .order("created_at", { ascending: false });
+
+        if (!error) {
+          const safeSeries = (data ?? []).map((row: any) => {
+            const rawTitle = row.title_clean ?? row.title ?? row.name ?? "シリーズ名未設定";
+            const cleanTitle = normalizeTitle(rawTitle) || rawTitle;
+            return {
+              id: row.id,
+              title_clean: cleanTitle,
+              slug: row.slug ?? `series-${row.id}`,
+            } satisfies SeriesOption;
+          });
+
+          setSeriesOptions(safeSeries);
+          return;
+        }
+
+        if (error.code !== "42703") {
+          console.error("シリーズの取得に失敗しました", error);
+          break;
+        }
       }
-
-      setSeriesOptions(data ?? []);
     };
 
     loadSeries();
@@ -323,14 +347,18 @@ export default function UploadForm() {
     if (!episodeTitleRaw.trim() || !episodeTitleClean.trim() || !thumbnailFile) {
       return false;
     }
-    if (type === "existing-series" && !seriesId) {
-      return false;
-    }
-    if (type === "new-series" && !newSeriesTitleRaw.trim() || !newSeriesTitleClean.trim()) {
-      return false;
+    if (target === "series") {
+      if (seriesMode === "existing-series" && !seriesId) {
+        return false;
+      }
+      if (seriesMode === "new-series") {
+        if (!newSeriesTitleRaw.trim() || !newSeriesTitleClean.trim()) {
+          return false;
+        }
+      }
     }
     return true;
-  }, [file, thumbnailFile, episodeTitleRaw, episodeTitleClean, type, seriesId, newSeriesTitleRaw, newSeriesTitleClean]);
+  }, [file, thumbnailFile, episodeTitleRaw, episodeTitleClean, target, seriesMode, seriesId, newSeriesTitleRaw, newSeriesTitleClean]);
 
   const canPublish = useMemo(() => {
     if (!canProceed) {
@@ -369,10 +397,25 @@ export default function UploadForm() {
     setError(null);
   };
 
-  const handleSelectType = (nextType: UploadType) => {
-    setType(nextType);
+  const handleSelectTarget = (nextTarget: UploadTarget) => {
+    setTarget(nextTarget);
     setError(null);
-    if (nextType === "new-series") {
+    if (nextTarget === "feed") {
+      setSeriesId("");
+      setSeasonId("");
+      setSeriesMode("new-series");
+      setNewSeriesTitleRaw("");
+      setNewSeriesTitleClean("");
+      setNewSeriesDescription("");
+      setHasSeason(false);
+      setNewSeasonName("");
+    }
+  };
+
+  const handleSelectSeriesMode = (nextMode: SeriesUploadMode) => {
+    setSeriesMode(nextMode);
+    setError(null);
+    if (nextMode === "new-series") {
       setSeriesId("");
       setSeasonId("");
     } else {
@@ -403,7 +446,8 @@ export default function UploadForm() {
     setNewSeasonName("");
     setSeriesId("");
     setSeasonId("");
-    setType("new-series");
+    setTarget("feed");
+    setSeriesMode("new-series");
     setStep("details");
     if (videoInputRef.current) {
       videoInputRef.current.value = "";
@@ -450,84 +494,89 @@ export default function UploadForm() {
           setAccessToken(activeAccessToken);
         }
 
-        let resolvedSeriesId: string | null = null;
-        let resolvedSeasonId: string | null = null;
         const storage = supabase.storage.from("video");
         const uploadedPaths: string[] = [];
 
-        if (type === "existing-series") {
-          resolvedSeriesId = seriesId;
-          resolvedSeasonId = seasonId;
-        }
+        let resolvedSeriesId: string | null = null;
+        let resolvedSeasonId: string | null = null;
 
-        if (type === "new-series") {
-          // Seriesを作成
-          const seriesSlug = generateSeriesSlug(newSeriesTitleClean);
-          const seriesResponse = await fetch("/api/series", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${activeAccessToken}`,
-            },
-            body: JSON.stringify({
-              title_raw: newSeriesTitleRaw,
-              title_clean: newSeriesTitleClean,
-              slug: seriesSlug,
-              description: newSeriesDescription || null,
-            }),
-          });
-
-          if (!seriesResponse.ok) {
-            const payload = await seriesResponse
-              .json()
-              .catch(() => ({ message: "シリーズの作成に失敗しました。" }));
-            throw new Error(payload.message ?? "シリーズの作成に失敗しました。");
+        if (target === "series") {
+          if (seriesMode === "existing-series") {
+            resolvedSeriesId = seriesId;
+            resolvedSeasonId = seasonId;
           }
 
-          const seriesPayload = await seriesResponse.json();
-          const createdSeries = seriesPayload.series ?? null;
-          resolvedSeriesId = createdSeries?.id ?? null;
+          if (seriesMode === "new-series") {
+            const seriesSlug = generateSeriesSlug(newSeriesTitleClean);
+            const seriesResponse = await fetch("/api/series", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${activeAccessToken}`,
+              },
+              body: JSON.stringify({
+                title_raw: newSeriesTitleRaw,
+                title_clean: newSeriesTitleClean,
+                slug: seriesSlug,
+                description: newSeriesDescription || null,
+              }),
+            });
+
+            if (!seriesResponse.ok) {
+              const payload = await seriesResponse
+                .json()
+                .catch(() => ({ message: "シリーズの作成に失敗しました。" }));
+              throw new Error(payload.message ?? "シリーズの作成に失敗しました。");
+            }
+
+            const seriesPayload = await seriesResponse.json();
+            const createdSeries = seriesPayload.series ?? null;
+            resolvedSeriesId = createdSeries?.id ?? null;
+
+            if (!resolvedSeriesId) {
+              throw new Error("シリーズの作成に失敗しました。");
+            }
+
+            const seasonNumber = hasSeason ? 1 : 0;
+            const seasonName = hasSeason && newSeasonName.trim() ? newSeasonName : "メイン";
+            const seasonSlug = generateSeasonSlug(seriesSlug, seasonNumber, seasonName);
+
+            const seasonResponse = await fetch("/api/seasons", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${activeAccessToken}`,
+              },
+              body: JSON.stringify({
+                series_id: resolvedSeriesId,
+                season_number: seasonNumber,
+                name: seasonName,
+                slug: seasonSlug,
+              }),
+            });
+
+            if (!seasonResponse.ok) {
+              const payload = await seasonResponse
+                .json()
+                .catch(() => ({ message: "シーズンの作成に失敗しました。" }));
+              throw new Error(payload.message ?? "シーズンの作成に失敗しました。");
+            }
+
+            const seasonPayload = await seasonResponse.json();
+            const createdSeason = seasonPayload.season ?? null;
+            resolvedSeasonId = createdSeason?.id ?? null;
+
+            if (!resolvedSeasonId) {
+              throw new Error("シーズンの作成に失敗しました。");
+            }
+
+            if (createdSeries) {
+              setSeriesOptions((prev) => [{ id: createdSeries.id, title_clean: createdSeries.title_clean, slug: createdSeries.slug }, ...prev]);
+            }
+          }
 
           if (!resolvedSeriesId) {
-            throw new Error("シリーズの作成に失敗しました。");
-          }
-
-          // Seasonを作成（シーズンが無い場合は season_number = 0）
-          const seasonNumber = hasSeason ? 1 : 0;
-          const seasonName = hasSeason && newSeasonName.trim() ? newSeasonName : "メイン";
-          const seasonSlug = generateSeasonSlug(seriesSlug, seasonNumber, seasonName);
-          
-          const seasonResponse = await fetch("/api/seasons", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${activeAccessToken}`,
-            },
-            body: JSON.stringify({
-              series_id: resolvedSeriesId,
-              season_number: seasonNumber,
-              name: seasonName,
-              slug: seasonSlug,
-            }),
-          });
-
-          if (!seasonResponse.ok) {
-            const payload = await seasonResponse
-              .json()
-              .catch(() => ({ message: "シーズンの作成に失敗しました。" }));
-            throw new Error(payload.message ?? "シーズンの作成に失敗しました。");
-          }
-
-          const seasonPayload = await seasonResponse.json();
-          const createdSeason = seasonPayload.season ?? null;
-          resolvedSeasonId = createdSeason?.id ?? null;
-
-          if (!resolvedSeasonId) {
-            throw new Error("シーズンの作成に失敗しました。");
-          }
-
-          if (createdSeries) {
-            setSeriesOptions((prev) => [{ id: createdSeries.id, title_clean: createdSeries.title_clean, slug: createdSeries.slug }, ...prev]);
+            throw new Error("シリーズが選択されていません。");
           }
         }
 
@@ -565,8 +614,51 @@ export default function UploadForm() {
           data: { publicUrl: thumbnailUrl },
         } = storage.getPublicUrl(thumbnailPath);
 
-        // Episodeを作成
+        if (target === "feed") {
+          const normalizedTags = tags
+            ? tags
+                .split(",")
+                .map((tag) => tag.trim())
+                .filter((tag) => tag.length > 0)
+                .join(",")
+            : null;
+
+          const videoResponse = await fetch("/api/videos", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${activeAccessToken}`,
+            },
+            body: JSON.stringify({
+              type: "single",
+              seriesId: null,
+              title: episodeTitleRaw,
+              description: description || null,
+              tags: normalizedTags,
+              filePath: videoPath,
+              publicUrl,
+              thumbnailUrl,
+              mosaicConfirmed: mosaicConfirmed,
+              noRepost,
+              isAdult,
+            }),
+          });
+
+          if (!videoResponse.ok) {
+            await storage.remove(uploadedPaths).catch(() => undefined);
+            const payload = await videoResponse
+              .json()
+              .catch(() => ({ message: "フィード投稿の登録に失敗しました。" }));
+            throw new Error(payload.message ?? "フィード投稿の登録に失敗しました。");
+          }
+
+          setMessage("フィード投稿としてアップロードが完了しました。公開ページを確認してください。");
+          resetForm();
+          return;
+        }
+
         if (!resolvedSeasonId) {
+          await storage.remove(uploadedPaths).catch(() => undefined);
           throw new Error("シーズンが選択されていません。");
         }
 
@@ -574,7 +666,7 @@ export default function UploadForm() {
         const seriesSlug = selectedSeries?.slug ?? generateSeriesSlug(newSeriesTitleClean);
         const selectedSeason = seasonOptions.find((s) => s.id === resolvedSeasonId);
         const seasonSlug = selectedSeason?.slug ?? generateSeasonSlug(seriesSlug, 0, "メイン");
-        
+
         const episodeNumberStr = generateEpisodeNumberStr(episodeNumberInt, episodeType);
         const episodeSlug = generateEpisodeSlug(seasonSlug, episodeNumberInt, episodeType);
 
@@ -614,7 +706,6 @@ export default function UploadForm() {
           throw new Error("エピソードの作成に失敗しました。");
         }
 
-        // VideoFileを作成
         const videoResponse = await fetch("/api/video-files", {
           method: "POST",
           headers: {
@@ -640,7 +731,7 @@ export default function UploadForm() {
           throw new Error(payload.message ?? "動画ファイルの登録に失敗しました。");
         }
 
-        setMessage("アップロードが完了しました。公開ページを確認してください。");
+        setMessage("シリーズにエピソードとしてアップロードが完了しました。公開ページを確認してください。");
         resetForm();
       } catch (uploadError) {
         const message =
@@ -651,29 +742,30 @@ export default function UploadForm() {
   }, [
     accessToken,
     description,
+    episodeNumberInt,
+    episodeTitleClean,
+    episodeTitleRaw,
+    episodeType,
     file,
-    mosaicConfirmed,
-    newSeriesDescription,
-    newSeriesTitleRaw,
-    newSeriesTitleClean,
     hasSeason,
+    isAdult,
+    mosaicConfirmed,
     newSeasonName,
+    newSeriesDescription,
+    newSeriesTitleClean,
+    newSeriesTitleRaw,
     noRepost,
     resetForm,
     seriesId,
+    seriesMode,
+    seriesOptions,
     seasonId,
+    seasonOptions,
     sessionUserId,
     supabase,
     tags,
+    target,
     thumbnailFile,
-    episodeTitleRaw,
-    episodeTitleClean,
-    episodeType,
-    episodeNumberInt,
-    type,
-    seriesOptions,
-    seasonOptions,
-    isAdult,
   ]);
 
   const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -808,20 +900,29 @@ export default function UploadForm() {
                 動画を選び直す
               </button>
             </div>
+            <p className="upload-form__orientation-hint">
+              フィード投稿は縦型（9:16）推奨、シリーズ投稿は横型（16:9）推奨です。
+            </p>
             <p className="upload-form__notice upload-form__notice--inline">アップロードできる動画サイズの上限は50MBです。</p>
           </section>
 
           {step === "details" ? (
             <div className="upload-form__details">
               <label className="upload-form__field">
-                <span className="upload-form__field-label">エピソードタイトル</span>
+                <span className="upload-form__field-label">
+                  {target === "series" ? "エピソードタイトル" : "投稿タイトル"}
+                </span>
                 <input
                   type="text"
                   value={episodeTitleRaw}
                   onChange={(event) => setEpisodeTitleRaw(event.target.value)}
-                  placeholder="例: 第1話「始まり」"
+                  placeholder={target === "series" ? "例: 第1話「始まり」" : "例: 夕暮れカフェのまったりタイム"}
                 />
-                <small className="upload-form__hint">元のタイトルをそのまま入力してください</small>
+                <small className="upload-form__hint">
+                  {target === "series"
+                    ? "元のタイトルをそのまま入力してください"
+                    : "視聴者に伝わりやすいタイトルを入力してください"}
+                </small>
               </label>
 
               {episodeTitleClean && (
@@ -831,29 +932,79 @@ export default function UploadForm() {
                 </div>
               )}
 
-              <label className="upload-form__field">
-                <span className="upload-form__field-label">エピソード番号</span>
-                <input
-                  type="number"
-                  min="1"
-                  value={episodeNumberInt}
-                  onChange={(event) => setEpisodeNumberInt(parseInt(event.target.value) || 1)}
-                />
-              </label>
-
-              <label className="upload-form__field">
-                <span className="upload-form__field-label">エピソードタイプ</span>
-                <select
-                  value={episodeType}
-                  onChange={(event) => setEpisodeType(event.target.value as EpisodeType)}
+              <div className="upload-form__scenarios">
+                <div
+                  className={`upload-form__scenario ${
+                    target === "feed" ? "upload-form__scenario--active" : ""
+                  }`}
                 >
-                  <option value="regular">通常</option>
-                  <option value="ova">OVA</option>
-                  <option value="special">スペシャル</option>
-                  <option value="movie">劇場版</option>
-                  <option value="recap">総集編</option>
-                </select>
-              </label>
+                  <button
+                    type="button"
+                    className="upload-form__scenario-toggle"
+                    onClick={() => handleSelectTarget("feed")}
+                    aria-pressed={target === "feed"}
+                  >
+                    フィード投稿（縦動画）
+                  </button>
+                  {target === "feed" && (
+                    <div className="upload-form__scenario-body">
+                      <p className="upload-form__hint">
+                        単発の縦型動画をフィードに公開します。視聴者のタイムラインに順次表示されます。
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <div
+                  className={`upload-form__scenario ${
+                    target === "series" ? "upload-form__scenario--active" : ""
+                  }`}
+                >
+                  <button
+                    type="button"
+                    className="upload-form__scenario-toggle"
+                    onClick={() => handleSelectTarget("series")}
+                    aria-pressed={target === "series"}
+                  >
+                    シリーズ投稿（横動画）
+                  </button>
+                  {target === "series" && (
+                    <div className="upload-form__scenario-body">
+                      <p className="upload-form__hint">
+                        シリーズ作品として横型のエピソードを追加します。新規シリーズ作成と既存シリーズへの追加が選択できます。
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {target === "series" && (
+                <>
+                  <label className="upload-form__field">
+                    <span className="upload-form__field-label">エピソード番号</span>
+                    <input
+                      type="number"
+                      min="1"
+                      value={episodeNumberInt}
+                      onChange={(event) => setEpisodeNumberInt(parseInt(event.target.value) || 1)}
+                    />
+                  </label>
+
+                  <label className="upload-form__field">
+                    <span className="upload-form__field-label">エピソードタイプ</span>
+                    <select
+                      value={episodeType}
+                      onChange={(event) => setEpisodeType(event.target.value as EpisodeType)}
+                    >
+                      <option value="regular">通常</option>
+                      <option value="ova">OVA</option>
+                      <option value="special">スペシャル</option>
+                      <option value="movie">劇場版</option>
+                      <option value="recap">総集編</option>
+                    </select>
+                  </label>
+                </>
+              )}
 
               <div className="upload-form__thumbnail">
                 <span className="upload-form__field-label">サムネイル</span>
@@ -861,7 +1012,7 @@ export default function UploadForm() {
                   {thumbnailPreviewUrl ? (
                     <img src={thumbnailPreviewUrl} alt="選択したサムネイル" />
                   ) : (
-                    <div className="upload-form__thumbnail-empty">16:9 推奨（1280×720px 以上）</div>
+                    <div className="upload-form__thumbnail-empty">フィード: 9:16 / シリーズ: 16:9 推奨</div>
                   )}
                 </div>
                 <div className="upload-form__thumbnail-actions">
@@ -874,24 +1025,28 @@ export default function UploadForm() {
                     サムネイルを選択
                   </button>
                 </div>
-                <small className="upload-form__hint">推奨: 16:9 / 1280×720px 以上</small>
+                <small className="upload-form__hint">
+                  {target === "series"
+                    ? "シリーズ向けは横型（推奨: 1280×720px）でご用意ください。"
+                    : "フィード向けは縦型（推奨: 1080×1920px）でご用意ください。"}
+                </small>
               </div>
 
               <div className="upload-form__scenarios">
                 <div
                   className={`upload-form__scenario ${
-                    type === "new-series" ? "upload-form__scenario--active" : ""
+                    seriesMode === "new-series" ? "upload-form__scenario--active" : ""
                   }`}
                 >
                   <button
                     type="button"
                     className="upload-form__scenario-toggle"
-                    onClick={() => handleSelectType("new-series")}
-                    aria-pressed={type === "new-series"}
+                    onClick={() => handleSelectSeriesMode("new-series")}
+                    aria-pressed={seriesMode === "new-series"}
                   >
-                    ＋ 新規エピソードを作成
+                    ＋ 新規シリーズを作成
                   </button>
-                  {type === "new-series" && (
+                  {seriesMode === "new-series" && (
                     <div className="upload-form__scenario-body">
                       <label className="upload-form__field">
                         <span className="upload-form__field-label">シリーズタイトル</span>
@@ -943,18 +1098,18 @@ export default function UploadForm() {
 
                 <div
                   className={`upload-form__scenario ${
-                    type === "existing-series" ? "upload-form__scenario--active" : ""
+                    seriesMode === "existing-series" ? "upload-form__scenario--active" : ""
                   }`}
                 >
                   <button
                     type="button"
                     className="upload-form__scenario-toggle"
-                    onClick={() => handleSelectType("existing-series")}
-                    aria-pressed={type === "existing-series"}
+                    onClick={() => handleSelectSeriesMode("existing-series")}
+                    aria-pressed={seriesMode === "existing-series"}
                   >
-                    既存のエピソードに追加
+                    既存シリーズに追加
                   </button>
-                  {type === "existing-series" && (
+                  {seriesMode === "existing-series" && (
                     <div className="upload-form__scenario-body">
                       {seriesOptions.length > 0 ? (
                         <>

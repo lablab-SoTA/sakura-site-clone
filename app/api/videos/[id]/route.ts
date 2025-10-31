@@ -1,33 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { createServiceRoleClient, getUserFromRequest } from "@/lib/supabase/server";
-
-/**
- * Supabase Storage の公開URLからバケット内のパスを取り出すヘルパー。
- * 対応バケットは video のみ。
- */
-const STORAGE_PUBLIC_PATH_PREFIX = "/storage/v1/object/public/video/";
-
-function extractStoragePathFromPublicUrl(url: string | null): string | null {
-  if (!url) {
-    return null;
-  }
-
-  try {
-    const parsedUrl = new URL(url);
-    const prefixIndex = parsedUrl.pathname.indexOf(STORAGE_PUBLIC_PATH_PREFIX);
-
-    if (prefixIndex === -1) {
-      return null;
-    }
-
-    const path = parsedUrl.pathname.slice(prefixIndex + STORAGE_PUBLIC_PATH_PREFIX.length);
-
-    return path ? decodeURIComponent(path) : null;
-  } catch {
-    return null;
-  }
-}
+import { extractVideoStoragePath } from "@/lib/supabase/storage";
 
 type VideoUpdatePayload = {
   title?: string;
@@ -74,25 +48,46 @@ export async function PATCH(
     return NextResponse.json({ message: "この動画を更新する権限がありません。" }, { status: 403 });
   }
 
+  const { data: episode } = await supabase
+    .from("episodes")
+    .select("id")
+    .eq("id", videoId)
+    .maybeSingle();
+
   const updateData: Record<string, unknown> = {};
+  let nextTitleValue: string | undefined;
+  let nextDescriptionValue: string | null | undefined;
+  let nextTagsValue: string[] | undefined;
+  let nextThumbnailUrlValue: string | null | undefined;
 
   if (Object.prototype.hasOwnProperty.call(body, "title")) {
-    const nextTitle = (body.title ?? "").trim();
-    if (!nextTitle) {
+    const candidateTitle = (body.title ?? "").trim();
+    if (!candidateTitle) {
       return NextResponse.json({ message: "タイトルを入力してください。" }, { status: 400 });
     }
-    updateData.title = nextTitle;
+    updateData.title = candidateTitle;
+    nextTitleValue = candidateTitle;
   }
 
   if (Object.prototype.hasOwnProperty.call(body, "description")) {
-    const nextDescription = body.description?.toString().trim() ?? "";
-    updateData.description = nextDescription.length > 0 ? nextDescription : null;
+    const candidateDescription = body.description?.toString().trim() ?? "";
+    updateData.description = candidateDescription.length > 0 ? candidateDescription : null;
+    nextDescriptionValue = candidateDescription.length > 0 ? candidateDescription : null;
   }
 
   if (Object.prototype.hasOwnProperty.call(body, "tags")) {
     const rawTags = body.tags?.toString() ?? "";
     const trimmed = rawTags.trim();
     updateData.tags = trimmed.length > 0 ? trimmed : null;
+    nextTagsValue = trimmed.length > 0
+      ? trimmed
+          .split(",")
+          .map((tag) => tag.trim())
+          .filter((tag) => tag.length > 0)
+      : [];
+    if (nextTagsValue.length === 0) {
+      nextTagsValue = [];
+    }
   }
 
   let shouldDeletePreviousThumbnail = false;
@@ -101,9 +96,11 @@ export async function PATCH(
     const nextThumbnail = body.thumbnailUrl?.toString().trim() ?? null;
     updateData.thumbnail_url = nextThumbnail && nextThumbnail.length > 0 ? nextThumbnail : null;
     shouldDeletePreviousThumbnail = true;
+    nextThumbnailUrlValue = nextThumbnail && nextThumbnail.length > 0 ? nextThumbnail : null;
   } else if (body.removeThumbnail) {
     updateData.thumbnail_url = null;
     shouldDeletePreviousThumbnail = true;
+    nextThumbnailUrlValue = null;
   }
 
   if (Object.keys(updateData).length === 0) {
@@ -123,9 +120,48 @@ export async function PATCH(
     return NextResponse.json({ message: "動画情報の更新に失敗しました。" }, { status: 500 });
   }
 
+  if (episode) {
+    const episodeUpdate: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (nextTitleValue !== undefined) {
+      episodeUpdate.title_raw = nextTitleValue;
+      episodeUpdate.title_clean = nextTitleValue;
+    }
+    if (nextDescriptionValue !== undefined) {
+      episodeUpdate.description = nextDescriptionValue;
+    }
+    if (nextTagsValue !== undefined) {
+      episodeUpdate.tags = nextTagsValue;
+    }
+    if (nextThumbnailUrlValue !== undefined) {
+      episodeUpdate.thumbnail_url = nextThumbnailUrlValue;
+    }
+
+    if (Object.keys(episodeUpdate).length > 1) {
+      const { error: episodeError } = await supabase
+        .from("episodes")
+        .update(episodeUpdate)
+        .eq("id", videoId);
+
+      if (episodeError) {
+        console.error("エピソード情報の同期に失敗しました:", episodeError);
+      }
+    }
+
+    if (nextThumbnailUrlValue !== undefined) {
+      const { error: fileThumbError } = await supabase
+        .from("video_files")
+        .update({ thumbnail_url: nextThumbnailUrlValue, updated_at: new Date().toISOString() })
+        .eq("episode_id", videoId);
+
+      if (fileThumbError) {
+        console.error("動画ファイルのサムネイル更新に失敗しました:", fileThumbError);
+      }
+    }
+  }
+
   if (shouldDeletePreviousThumbnail) {
-    const previousPath = extractStoragePathFromPublicUrl(video.thumbnail_url ?? null);
-    const nextPath = extractStoragePathFromPublicUrl((updateData.thumbnail_url as string | null) ?? null);
+    const previousPath = extractVideoStoragePath(video.thumbnail_url ?? null);
+    const nextPath = extractVideoStoragePath((updateData.thumbnail_url as string | null) ?? null);
 
     if (previousPath && previousPath !== nextPath) {
       await supabase.storage.from("video").remove([previousPath]).catch(() => undefined);
@@ -166,14 +202,44 @@ export async function DELETE(
     return NextResponse.json({ message: "この動画を削除する権限がありません。" }, { status: 403 });
   }
 
+  const { data: episode } = await supabase
+    .from("episodes")
+    .select("thumbnail_url")
+    .eq("id", videoId)
+    .maybeSingle();
+
+  const { data: videoFile } = await supabase
+    .from("video_files")
+    .select("file_path, thumbnail_url")
+    .eq("episode_id", videoId)
+    .maybeSingle();
+
   const storage = supabase.storage.from("video");
   const objectsToRemove = new Set<string>();
   objectsToRemove.add(video.file_path);
 
-  const thumbnailPath = extractStoragePathFromPublicUrl(video.thumbnail_url ?? null);
+  const thumbnailPath = extractVideoStoragePath(video.thumbnail_url ?? null);
 
   if (thumbnailPath) {
     objectsToRemove.add(thumbnailPath);
+  }
+
+  if (episode?.thumbnail_url) {
+    const episodeThumbPath = extractVideoStoragePath(episode.thumbnail_url);
+    if (episodeThumbPath) {
+      objectsToRemove.add(episodeThumbPath);
+    }
+  }
+
+  if (videoFile?.file_path) {
+    objectsToRemove.add(videoFile.file_path);
+  }
+
+  if (videoFile?.thumbnail_url) {
+    const fileThumbPath = extractVideoStoragePath(videoFile.thumbnail_url);
+    if (fileThumbPath) {
+      objectsToRemove.add(fileThumbPath);
+    }
   }
 
   if (objectsToRemove.size > 0) {
@@ -188,6 +254,12 @@ export async function DELETE(
 
   if (error) {
     return NextResponse.json({ message: "動画の削除に失敗しました。" }, { status: 500 });
+  }
+
+  const { error: episodeDeleteError } = await supabase.from("episodes").delete().eq("id", videoId);
+
+  if (episodeDeleteError) {
+    console.error("エピソードの削除に失敗しました:", episodeDeleteError);
   }
 
   return NextResponse.json({ message: "動画を削除しました。" });

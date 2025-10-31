@@ -9,7 +9,7 @@ type TouchNavBarProps = {
   variant: "header" | "footer";
 };
 
-type NavKey = "home" | "upload" | "account";
+type NavKey = "home" | "feed" | "upload" | "account";
 
 type NavItem = {
   key: NavKey;
@@ -31,6 +31,12 @@ const BASE_NAV_ITEMS: ReadonlyArray<NavItem> = [
     label: "ホーム",
     href: "/",
     match: (path) => path === "/" || path.startsWith("/videos") || path.startsWith("/watch"),
+  },
+  {
+    key: "feed",
+    label: "フィード",
+    href: "/feed",
+    match: (path) => path.startsWith("/feed"),
   },
   {
     key: "upload",
@@ -350,6 +356,7 @@ export default function TouchNavBar({ variant }: TouchNavBarProps) {
           >
             <span className="touch-nav__icon" aria-hidden="true">
               {item.key === "home" && <HomeIcon />}
+              {item.key === "feed" && <FeedIcon />}
               {item.key === "upload" && <PlusSquareIcon />}
               {item.key === "account" && <AccountIcon />}
             </span>
@@ -368,6 +375,17 @@ function HomeIcon() {
         d="M5 9.55 12 4l7 5.55V19a1 1 0 0 1-1 1h-4.5a.5.5 0 0 1-.5-.5V15h-2v4.5a.5.5 0 0 1-.5.5H6a1 1 0 0 1-1-1z"
         fill="currentColor"
       />
+    </svg>
+  );
+}
+
+function FeedIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="24" height="24" className="touch-nav__svg" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="4" y="4" width="7" height="9" rx="2" stroke="currentColor" strokeWidth="1.6"/>
+      <rect x="13" y="4" width="7" height="5" rx="2" stroke="currentColor" strokeWidth="1.6"/>
+      <rect x="13" y="11" width="7" height="9" rx="2" stroke="currentColor" strokeWidth="1.6"/>
+      <rect x="4" y="14" width="7" height="6" rx="2" stroke="currentColor" strokeWidth="1.6"/>
     </svg>
   );
 }

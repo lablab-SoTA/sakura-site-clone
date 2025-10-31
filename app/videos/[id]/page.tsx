@@ -2,6 +2,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { fetchAnimeList } from "@/lib/anime";
+import { formatNumberJP } from "@/lib/intl";
+import { XANIME_THUMB_PLACEHOLDER } from "@/lib/placeholders";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 
 import VideoWatch from "./video-watch";
@@ -45,6 +48,32 @@ function getSnsLabel(key: "x" | "instagram" | "youtube"): string {
     default:
       return "外部リンクを開く";
   }
+}
+
+function formatDaysAgo(dateString: string | null | undefined): string {
+  if (!dateString) {
+    return "投稿日不明";
+  }
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) {
+    return "投稿日不明";
+  }
+  const diffMs = Date.now() - date.getTime();
+  const diffDays = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+  if (diffDays === 0) {
+    return "今日";
+  }
+  return `${diffDays}日前`;
+}
+
+function resolvePoster(poster?: string | null, fallback?: string | null): string {
+  if (poster && poster.length > 0) {
+    return poster;
+  }
+  if (fallback && fallback.length > 0) {
+    return fallback;
+  }
+  return XANIME_THUMB_PLACEHOLDER;
 }
 
 type VideoRecord = {
@@ -186,89 +215,63 @@ export default async function VideoPage({
     snsLinks.push({ key: "youtube", href: profile.sns_youtube.trim() });
   }
 
+  const seriesSlug = series?.slug ?? (series?.id ? `series-${series.id}` : null);
+
+  const currentEpisodeIndex = seriesEpisodes.findIndex((episode) => episode.isCurrent);
+  const nextEpisode = currentEpisodeIndex !== -1 ? seriesEpisodes[currentEpisodeIndex + 1] ?? null : null;
+  const otherEpisodes = seriesEpisodes.filter(
+    (episode) => episode.id !== video.id && (!nextEpisode || episode.id !== nextEpisode.id),
+  );
+
+  const animeList = await fetchAnimeList();
+  const recommendedSeries = animeList
+    .filter((item) => item.seriesId && item.seriesId !== (series?.id ?? null))
+    .slice(0, 6);
+
   return (
-    <div className="video-page">
-      <div className="video-page__player">
-        <VideoWatch
-          videoId={video.id}
-          src={video.public_url}
-          title={video.title}
-          description={video.description}
-          initialLikeCount={video.like_count}
-          initialViewCount={video.view_count}
-          ownerId={video.owner_id}
-          width={video.width}
-          height={video.height}
-          tags={tags ?? []}
-          thumbnailUrl={video.thumbnail_url}
-          episodeNumber={currentEpisode?.episodeNumber}
-          episodeCount={totalEpisodes > 0 ? totalEpisodes : undefined}
-          seriesId={series?.id}
-          seriesSlug={series?.slug ?? (series?.id ? `series-${series.id}` : null)}
-          firstEpisodeId={firstEpisode?.id}
-        />
-        {totalEpisodes > 0 && (
-          <section className="video-page__episodes" aria-label="シリーズのエピソード一覧">
-            <header className="video-page__episodes-header">
-              <span className="video-page__episodes-kicker">EPISODES</span>
-              <h2 className="video-page__episodes-title">{series?.title ?? "エピソード"}</h2>
-              <p className="video-page__episodes-lede">
-                全{totalEpisodes.toLocaleString()}話中の第{(currentEpisode?.episodeNumber ?? 1).toLocaleString()}話を再生中
-              </p>
-            </header>
-            <ol className="video-page__episode-list">
-              {seriesEpisodes.map((episode) => (
-                <li
-                  key={episode.id}
-                  className={`video-page__episode-item${episode.isCurrent ? " video-page__episode-item--active" : ""}`}
-                >
-                  {episode.isCurrent ? (
-                    <span className="video-page__episode-link video-page__episode-link--active" aria-current="true">
-                      <span className="video-page__episode-number">
-                        第{episode.episodeNumber.toLocaleString()}話
-                      </span>
-                      <span className="video-page__episode-title">{episode.title}</span>
-                      <span className="video-page__episode-stats">
-                        {episode.view_count.toLocaleString()} 再生・{episode.like_count.toLocaleString()} いいね
-                      </span>
-                    </span>
-                  ) : (
-                    <Link href={`/videos/${episode.id}`} className="video-page__episode-link">
-                      <span className="video-page__episode-number">
-                        第{episode.episodeNumber.toLocaleString()}話
-                      </span>
-                      <span className="video-page__episode-title">{episode.title}</span>
-                      <span className="video-page__episode-stats">
-                        {episode.view_count.toLocaleString()} 再生・{episode.like_count.toLocaleString()} いいね
-                      </span>
-                    </Link>
-                  )}
-                </li>
-              ))}
-            </ol>
-          </section>
-        )}
-      </div>
-      <aside className="video-page__meta">
-        <div className="video-page__author">
-          <h2>投稿者</h2>
+    <div className="episode-watch">
+      <div className="episode-watch__main">
+        <div className="episode-watch__player">
+          <VideoWatch
+            videoId={video.id}
+            src={video.public_url}
+            title={video.title}
+            description={video.description}
+            initialLikeCount={video.like_count}
+            initialViewCount={video.view_count}
+            ownerId={video.owner_id}
+            width={video.width}
+            height={video.height}
+            tags={tags ?? []}
+            thumbnailUrl={video.thumbnail_url}
+            episodeNumber={currentEpisode?.episodeNumber}
+            episodeCount={totalEpisodes > 0 ? totalEpisodes : undefined}
+            seriesId={series?.id}
+            seriesSlug={seriesSlug}
+            firstEpisodeId={firstEpisode?.id}
+          />
+        </div>
+        <section className="episode-watch__creator" aria-labelledby="episode-watch-creator">
+          <h2 id="episode-watch-creator" className="episode-watch__heading">
+            クリエイター
+          </h2>
           <Link
             href={`/u/${video.owner_id}`}
-            className="video-page__author-header"
+            className="episode-watch__creator-link"
             aria-label="投稿者のプロフィールページへ"
           >
-            <span className="video-page__author-avatar">
+            <span className="episode-watch__creator-avatar">
               {profile?.avatar_url ? (
-                <Image src={profile.avatar_url} alt="" fill sizes="56px" />
+                <Image src={profile.avatar_url} alt="" fill sizes="64px" />
               ) : (
                 <span>{authorInitial}</span>
               )}
             </span>
-            <span className="video-page__author-name">{authorDisplayName}</span>
+            <span className="episode-watch__creator-name">{authorDisplayName}</span>
           </Link>
-          {profile?.bio && <p className="video-page__author-bio">{profile.bio}</p>}
+          {profile?.bio && <p className="episode-watch__creator-bio">{profile.bio}</p>}
           {snsLinks.length > 0 && (
-            <ul className="video-page__author-links" aria-label="SNSリンク">
+            <ul className="episode-watch__sns" aria-label="SNSリンク">
               {snsLinks.map((item) => (
                 <li key={item.key}>
                   <Link href={item.href} target="_blank" rel="noreferrer" aria-label={getSnsLabel(item.key)}>
@@ -278,25 +281,105 @@ export default async function VideoPage({
               ))}
             </ul>
           )}
-        </div>
-        {series && (
-          <div className="video-page__series">
-            <h2>シリーズ</h2>
-            {firstEpisode ? (
-              <Link
-                href={`/videos/${firstEpisode.id}`}
-                className="video-page__series-link"
-                aria-label="シリーズの第1話へ移動"
-              >
-                {series.title}
-                <span aria-hidden="true">第1話へ</span>
-              </Link>
-            ) : (
-              <p>{series.title}</p>
-            )}
-          </div>
+        </section>
+      </div>
+      <aside className="episode-watch__sidebar">
+        {series && nextEpisode && (
+          <section className="episode-watch__next" aria-labelledby="episode-watch-next">
+            <h2 id="episode-watch-next" className="episode-watch__heading">
+              次のエピソード
+            </h2>
+            <Link href={`/videos/${nextEpisode.id}`} className="episode-watch__next-card">
+              <div className="episode-watch__next-thumb">
+                <Image
+                  src={resolvePoster(nextEpisode.thumbnail_url, video.thumbnail_url)}
+                  alt={`${nextEpisode.title}のサムネイル`}
+                  fill
+                  className="episode-watch__next-image"
+                  sizes="(max-width: 768px) 70vw, 320px"
+                />
+              </div>
+              <div className="episode-watch__next-body">
+                <span className="episode-watch__next-number">
+                  第{nextEpisode.episodeNumber.toLocaleString()}話
+                </span>
+                <span className="episode-watch__next-title">{nextEpisode.title}</span>
+                <span className="episode-watch__next-meta">
+                  {formatDaysAgo(nextEpisode.created_at)}・{formatNumberJP(nextEpisode.view_count)}回再生
+                </span>
+              </div>
+            </Link>
+          </section>
         )}
-        <Link href={`/report/${video.id}`} className="video-page__report">
+
+        {series && otherEpisodes.length > 0 && (
+          <section className="episode-watch__episodes" aria-labelledby="episode-watch-others">
+            <div className="episode-watch__section-header">
+              <h2 id="episode-watch-others" className="episode-watch__heading">
+                他のエピソード
+              </h2>
+              {seriesSlug && (
+                <Link href={`/series/${seriesSlug}`} className="episode-watch__series-link">
+                  シリーズ一覧へ
+                </Link>
+              )}
+            </div>
+            <ul className="episode-watch__episode-list">
+              {otherEpisodes.map((episode) => {
+                const episodeLink = seriesSlug
+                  ? `/series/${seriesSlug}?episode=${episode.id}`
+                  : `/videos/${episode.id}`;
+                return (
+                  <li key={episode.id}>
+                    <Link href={episodeLink} className="episode-watch__episode-link">
+                      <span className="episode-watch__episode-number">
+                        第{episode.episodeNumber.toLocaleString()}話
+                      </span>
+                      <span className="episode-watch__episode-title">{episode.title}</span>
+                      <span className="episode-watch__episode-meta">
+                        {formatDaysAgo(episode.created_at)}・{formatNumberJP(episode.view_count)}回
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
+
+        {recommendedSeries.length > 0 && (
+          <section className="episode-watch__recommend" aria-labelledby="episode-watch-recommend">
+            <h2 id="episode-watch-recommend" className="episode-watch__heading">
+              おすすめシリーズ
+            </h2>
+            <div className="episode-watch__recommend-grid">
+              {recommendedSeries.map((item) => {
+                const primaryEpisode = item.episodes[0];
+                return (
+                  <Link key={item.slug} href={`/series/${item.slug}`} className="episode-watch__recommend-card">
+                    <div className="episode-watch__recommend-thumb">
+                      <Image
+                        src={resolvePoster(primaryEpisode?.video.poster, item.thumbnail)}
+                        alt={`${item.title}のサムネイル`}
+                        fill
+                        className="episode-watch__recommend-image"
+                        sizes="(max-width: 768px) 60vw, 240px"
+                      />
+                    </div>
+                    <div className="episode-watch__recommend-body">
+                      <span className="episode-watch__recommend-title">{item.title}</span>
+                      <span className="episode-watch__recommend-meta">
+                        全{item.episodes.length.toLocaleString()}話・{formatNumberJP(item.metrics?.views ?? 0)}回
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        <Link href={`/report/${video.id}`} className="episode-watch__report">
           不適切な作品を通報する
         </Link>
       </aside>

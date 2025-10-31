@@ -1,12 +1,15 @@
 import { XANIME_THUMB_PLACEHOLDER } from "@/lib/placeholders";
 import type { Anime, AnimeEpisode } from "@/lib/anime";
-import { detectVideoType } from "@/lib/anime";
+import { detectVideoType, detectVideoOrientation, resolvePrimaryOrientation } from "@/lib/anime";
 import type { EpisodeWithVideoFile, SeriesWithHierarchy } from "@/lib/types/hierarchy";
 
 /**
  * 階層データから AnimeEpisode を生成するヘルパー
  */
-function createAnimeEpisodeFromHierarchy(episode: EpisodeWithVideoFile): AnimeEpisode | null {
+function createAnimeEpisodeFromHierarchy(
+  episode: EpisodeWithVideoFile,
+  seriesId: string,
+): AnimeEpisode | null {
   const videoFile = episode.video_file;
 
   if (!videoFile) {
@@ -20,6 +23,7 @@ function createAnimeEpisodeFromHierarchy(episode: EpisodeWithVideoFile): AnimeEp
 
   const duration = episode.duration_sec ?? videoFile.duration_sec ?? 0;
   const synopsis = episode.description ?? "";
+  const orientation = detectVideoOrientation(videoFile.width ?? null, videoFile.height ?? null);
 
   return {
     id: episode.id,
@@ -30,12 +34,23 @@ function createAnimeEpisodeFromHierarchy(episode: EpisodeWithVideoFile): AnimeEp
       type: detectVideoType(src),
       src,
       poster: videoFile.thumbnail_url ?? undefined,
+      width: videoFile.width,
+      height: videoFile.height,
+      orientation,
     },
+    orientation,
     metrics: {
       views: videoFile.view_count ?? 0,
       likes: videoFile.like_count ?? 0,
     },
     episodeNumber: episode.episode_number_int,
+    ownerId: videoFile.owner_id,
+    createdAt:
+      videoFile.published_at ??
+      episode.release_date ??
+      videoFile.created_at ??
+      episode.created_at,
+    seriesId,
   };
 }
 
@@ -51,7 +66,7 @@ export function convertSeriesHierarchyToAnime(series: SeriesWithHierarchy): Anim
     return episodes
       .slice()
       .sort((a, b) => a.episode_number_int - b.episode_number_int)
-      .map(createAnimeEpisodeFromHierarchy)
+      .map((episode) => createAnimeEpisodeFromHierarchy(episode, series.id))
       .filter((episode): episode is AnimeEpisode => episode !== null);
   });
 
@@ -73,15 +88,18 @@ export function convertSeriesHierarchyToAnime(series: SeriesWithHierarchy): Anim
       : Number.isFinite(new Date(series.created_at).getFullYear())
         ? new Date(series.created_at).getFullYear()
         : new Date().getFullYear();
+  const primaryOwnerId = flattenedEpisodes.find((episode) => episode.ownerId)?.ownerId;
 
   return {
     slug: series.slug || `series-${series.id}`,
+    seriesId: series.id,
     title: series.title_clean || series.title_raw,
     synopsis: series.description ?? primaryEpisode.synopsis ?? "",
     thumbnail: series.cover_url ?? firstPoster ?? XANIME_THUMB_PLACEHOLDER,
     year,
     rating,
     genres,
+    ownerId: primaryOwnerId ?? undefined,
     duration: totalDuration,
     metrics: {
       views: totalViews,
@@ -91,6 +109,7 @@ export function convertSeriesHierarchyToAnime(series: SeriesWithHierarchy): Anim
       ...episode,
       episodeNumber: episode.episodeNumber ?? index + 1,
     })),
+    primaryOrientation: resolvePrimaryOrientation(flattenedEpisodes),
   };
 }
 

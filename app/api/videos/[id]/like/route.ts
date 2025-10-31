@@ -40,6 +40,15 @@ export async function POST(
       .update({ like_count: nextCount, updated_at: new Date().toISOString() })
       .eq("id", videoId);
 
+    const { error: fileLikeSyncError } = await supabase
+      .from("video_files")
+      .update({ like_count: nextCount, updated_at: new Date().toISOString() })
+      .eq("episode_id", videoId);
+
+    if (fileLikeSyncError) {
+      console.error("video_files のいいね数更新に失敗しました:", fileLikeSyncError);
+    }
+
     return NextResponse.json({ liked: false, likeCount: nextCount });
   }
 
@@ -61,6 +70,15 @@ export async function POST(
     .from("videos")
     .update({ like_count: nextCount, updated_at: new Date().toISOString() })
     .eq("id", videoId);
+
+  const { error: fileLikeSyncError } = await supabase
+    .from("video_files")
+    .update({ like_count: nextCount, updated_at: new Date().toISOString() })
+    .eq("episode_id", videoId);
+
+  if (fileLikeSyncError) {
+    console.error("video_files のいいね数更新に失敗しました:", fileLikeSyncError);
+  }
 
   return NextResponse.json({ liked: true, likeCount: nextCount });
 }

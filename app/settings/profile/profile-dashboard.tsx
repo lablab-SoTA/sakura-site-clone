@@ -3,10 +3,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type FormEvent, type ReactNode } from "react";
 import type { PostgrestError } from "@supabase/supabase-js";
 
 import ProfileForm from "./profile-form";
+import CreatorContentTabs, { type CreatorSeriesItem } from "@/components/creator/CreatorContentTabs";
+import type { FeedViewerItem } from "@/components/feed/FeedViewer";
+import { XANIME_THUMB_PLACEHOLDER } from "@/lib/placeholders";
 import { getBrowserSupabaseClient } from "@/lib/supabase/client";
 
 type ProfileData = {
@@ -21,6 +24,7 @@ type ProfileData = {
 type VideoData = {
   id: string;
   title: string;
+  description: string | null;
   public_url: string;
   thumbnail_url: string | null;
   like_count: number;
@@ -28,21 +32,28 @@ type VideoData = {
   created_at: string;
   series_id: string | null;
   series_title: string | null;
+  series_slug: string | null;
   episode_number_int?: number | null;
   episode_number_str?: string | null;
   watchPath: string | null;
   source: "legacy" | "hierarchy";
+  width: number | null;
+  height: number | null;
+  orientation: "portrait" | "landscape" | "square" | "unknown";
 };
 
 type LegacyVideoRow = {
   id: string;
   title: string;
+  description: string | null;
   public_url: string;
   thumbnail_url: string | null;
   like_count: number;
   view_count: number;
   created_at: string;
   series_id: string | null;
+  width: number | null;
+  height: number | null;
   series?: {
     title_clean?: string | null;
     title_raw?: string | null;
@@ -55,9 +66,12 @@ type EpisodeRow = {
   id: string;
   title_clean: string | null;
   title_raw: string | null;
+  description: string | null;
   episode_number_int: number | null;
   episode_number_str: string | null;
   created_at: string;
+  thumbnail_url: string | null;
+  tags: string[] | null;
   season: {
     id: string;
     name: string | null;
@@ -79,6 +93,8 @@ type EpisodeRow = {
     view_count: number | null;
     visibility: "PUBLIC" | "UNLISTED" | "PRIVATE";
     status: "PUBLISHED" | "DRAFT" | "ARCHIVED";
+    width: number | null;
+    height: number | null;
   } | null;
 };
 
@@ -136,6 +152,27 @@ function isMissingTable(error: PostgrestError | null | undefined): boolean {
   return error?.code === "PGRST205";
 }
 
+function calculateFeedScore(views: number, likes: number, createdAt: string | null | undefined): number {
+  const now = Date.now();
+  const createdTime = createdAt ? new Date(createdAt).getTime() : now;
+  const isValid = Number.isFinite(createdTime);
+  const ageHours = Math.max(1, (now - (isValid ? createdTime : now)) / (1000 * 60 * 60));
+  const recencyBoost = 80000 / ageHours;
+  const likeBoost = likes * 16;
+  const viewScore = views * 0.55;
+  return recencyBoost + likeBoost + viewScore;
+}
+
+function resolvePoster(poster?: string | null, fallback?: string | null): string {
+  if (poster && poster.length > 0) {
+    return poster;
+  }
+  if (fallback && fallback.length > 0) {
+    return fallback;
+  }
+  return XANIME_THUMB_PLACEHOLDER;
+}
+
 export default function ProfileDashboard() {
   const supabase = getBrowserSupabaseClient();
   const router = useRouter();
@@ -148,6 +185,7 @@ export default function ProfileDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ActiveTab>("published");
   const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [isVideoManagerOpen, setIsVideoManagerOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [logoutError, setLogoutError] = useState<string | null>(null);
 
@@ -174,7 +212,7 @@ export default function ProfileDashboard() {
       const legacyVideoQuery = await supabase
         .from("videos")
         .select(
-          "id, title, public_url, thumbnail_url, like_count, view_count, created_at, series_id, series:series(*)",
+          "id, title, description, public_url, thumbnail_url, like_count, view_count, created_at, series_id, width, height, series:series(*)",
         )
         .eq("owner_id", targetUserId)
         .eq("visibility", "PUBLIC")
@@ -189,7 +227,7 @@ export default function ProfileDashboard() {
         if (isMissingColumn(legacyVideoError)) {
           const fallbackVideos = await supabase
             .from("videos")
-            .select("id, title, public_url, thumbnail_url, like_count, view_count, created_at, series_id")
+            .select("id, title, description, public_url, thumbnail_url, like_count, view_count, created_at, series_id, width, height")
             .eq("owner_id", targetUserId)
             .eq("visibility", "PUBLIC")
             .eq("status", "PUBLISHED")
@@ -214,7 +252,7 @@ export default function ProfileDashboard() {
       const legacyLikesQuery = await supabase
         .from("likes")
         .select(
-          "created_at, video:videos(id, title, public_url, thumbnail_url, like_count, view_count, created_at, series_id, series:series(*))",
+          "created_at, video:videos(id, title, description, public_url, thumbnail_url, like_count, view_count, created_at, series_id, width, height, series:series(*))",
         )
         .eq("user_id", targetUserId)
         .order("created_at", { ascending: false })
@@ -227,7 +265,7 @@ export default function ProfileDashboard() {
         if (isMissingColumn(legacyLikeError)) {
           const fallbackLikes = await supabase
             .from("likes")
-            .select("created_at, video:videos(id, title, public_url, thumbnail_url, like_count, view_count, created_at, series_id)")
+            .select("created_at, video:videos(id, title, description, public_url, thumbnail_url, like_count, view_count, created_at, series_id, width, height)")
             .eq("user_id", targetUserId)
             .order("created_at", { ascending: false })
             .returns<LegacyLikeRow[]>();
@@ -254,7 +292,7 @@ export default function ProfileDashboard() {
       const { data: episodeRows, error: episodeError } = await supabase
         .from("episodes")
         .select(
-          "id, title_clean, title_raw, episode_number_int, episode_number_str, created_at, season:seasons(id, name, season_number, series:series(*)), video_file:video_files(id, owner_id, public_url, thumbnail_url, like_count, view_count, visibility, status)",
+          "id, title_clean, title_raw, description, thumbnail_url, tags, episode_number_int, episode_number_str, created_at, season:seasons(id, name, season_number, series:series(*)), video_file:video_files(id, owner_id, public_url, thumbnail_url, like_count, view_count, visibility, status, width, height)",
         )
         .eq("video_file.owner_id", targetUserId)
         .not("video_file", "is", null)
@@ -273,7 +311,7 @@ export default function ProfileDashboard() {
       const { data: episodeLikeRows, error: episodeLikeError } = await supabase
         .from("episode_likes")
         .select(
-          "created_at, episode:episodes(id, title_clean, title_raw, episode_number_int, episode_number_str, created_at, season:seasons(id, name, season_number, series:series(*)), video_file:video_files(id, owner_id, public_url, thumbnail_url, like_count, view_count, visibility, status))",
+          "created_at, episode:episodes(id, title_clean, title_raw, description, thumbnail_url, tags, episode_number_int, episode_number_str, created_at, season:seasons(id, name, season_number, series:series(*)), video_file:video_files(id, owner_id, public_url, thumbnail_url, like_count, view_count, visibility, status, width, height))",
         )
         .eq("user_id", targetUserId)
         .order("created_at", { ascending: false })
@@ -342,12 +380,29 @@ export default function ProfileDashboard() {
   }, [loadData, supabase]);
 
   const handleOpenEditor = () => {
+    setIsVideoManagerOpen(false);
     setIsEditorOpen(true);
   };
 
   const handleCloseEditor = () => {
     setIsEditorOpen(false);
   };
+
+  const handleOpenVideoManager = () => {
+    setIsEditorOpen(false);
+    setIsVideoManagerOpen(true);
+  };
+
+  const handleCloseVideoManager = () => {
+    setIsVideoManagerOpen(false);
+  };
+
+  const handleVideoLibraryRefreshed = useCallback(async () => {
+    if (!userId) {
+      return;
+    }
+    await loadData(userId);
+  }, [loadData, userId]);
 
   const handleProfileSaved = async () => {
     if (!userId) {
@@ -424,6 +479,71 @@ export default function ProfileDashboard() {
     return publishedVideos.reduce((total, video) => {
       return total + (video.view_count ?? 0);
     }, 0);
+  }, [publishedVideos]);
+
+  const feedItems = useMemo<FeedViewerItem[]>(() => {
+    return publishedVideos
+      .filter((video) => isPortraitVideo(video))
+      .map((video) => ({
+        id: video.id,
+        title: video.title,
+        description: video.description ?? "",
+        src: video.public_url,
+        poster: resolvePoster(video.thumbnail_url, null),
+        creatorName: displayName,
+        creatorId: userId,
+        creatorAvatar: profile?.avatar_url ?? null,
+        views: video.view_count ?? 0,
+        likes: video.like_count ?? 0,
+        createdAt: video.created_at,
+        score: calculateFeedScore(video.view_count ?? 0, video.like_count ?? 0, video.created_at),
+      }))
+      .sort((a, b) => b.score - a.score);
+  }, [displayName, profile?.avatar_url, publishedVideos, userId]);
+
+  const seriesItems = useMemo<CreatorSeriesItem[]>(() => {
+    const groups = new Map<string, { slug: string; title: string; videos: VideoData[] }>();
+
+    publishedVideos.forEach((video) => {
+      if (isPortraitVideo(video)) {
+        return;
+      }
+
+      const hasSeries = Boolean(video.series_id);
+      const slug = hasSeries
+        ? video.series_slug ?? `series-${video.series_id}`
+        : `video-${video.id}`;
+      const title = hasSeries ? video.series_title ?? "シリーズ名未設定" : video.title;
+
+      const existing = groups.get(slug);
+      if (existing) {
+        existing.videos.push(video);
+      } else {
+        groups.set(slug, {
+          slug,
+          title,
+          videos: [video],
+        });
+      }
+    });
+
+    return Array.from(groups.values())
+      .map((group) => {
+        const sorted = group.videos
+          .slice()
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        const latest = sorted[0];
+        const totalViewsGroup = group.videos.reduce((acc, video) => acc + (video.view_count ?? 0), 0);
+        return {
+          slug: group.slug,
+          title: group.title,
+          poster: resolvePoster(latest?.thumbnail_url ?? null, null),
+          episodeCount: group.videos.length,
+          updatedAt: latest?.created_at ?? null,
+          views: totalViewsGroup,
+        } satisfies CreatorSeriesItem;
+      })
+      .sort((a, b) => b.views - a.views);
   }, [publishedVideos]);
 
   const totalLikeCount = useMemo(() => {
@@ -508,6 +628,13 @@ export default function ProfileDashboard() {
               <button type="button" className="button profile-dashboard__edit-button" onClick={handleOpenEditor}>
                 プロフィールを変更
               </button>
+              <button
+                type="button"
+                className="profile-dashboard__video-button"
+                onClick={handleOpenVideoManager}
+              >
+                動画を編集
+              </button>
             </div>
           </div>
         </div>
@@ -546,7 +673,7 @@ export default function ProfileDashboard() {
             tabIndex={activeTab === "published" ? 0 : -1}
           >
             {publishedVideos.length > 0 ? (
-              <VideoList videos={publishedVideos} />
+              <CreatorContentTabs feedItems={feedItems} seriesItems={seriesItems} />
             ) : (
               <p className="profile-dashboard__empty">公開した作品はまだありません。</p>
             )}
@@ -597,17 +724,72 @@ export default function ProfileDashboard() {
           </div>
         </div>
       )}
+      {isVideoManagerOpen && (
+        <VideoManagerModal
+          videos={publishedVideos}
+          supabase={supabase}
+          onClose={handleCloseVideoManager}
+          onRefresh={handleVideoLibraryRefreshed}
+        />
+      )}
     </div>
   );
+}
+
+function detectVideoOrientationFromDimensions(
+  width: number | null,
+  height: number | null,
+): VideoData["orientation"] {
+  if (!width || !height || width <= 0 || height <= 0) {
+    return "unknown";
+  }
+  if (height > width * 1.05) {
+    return "portrait";
+  }
+  if (width > height * 1.05) {
+    return "landscape";
+  }
+  return "square";
+}
+
+function isPortraitVideo(video: VideoData): boolean {
+  if (video.orientation === "portrait") {
+    return true;
+  }
+
+  if (video.orientation === "landscape") {
+    return false;
+  }
+
+  if (video.orientation === "square") {
+    return video.series_id === null;
+  }
+
+  if (video.width && video.height) {
+    if (video.height > video.width * 1.02) {
+      return true;
+    }
+    if (video.width > video.height * 1.02) {
+      return false;
+    }
+  }
+
+  // 寸法情報が無い旧データはシリーズ紐付きかどうかで推定する
+  return video.series_id === null;
 }
 
 function normalizeLegacyVideoRow(video: LegacyVideoRow): VideoData {
   const rawSeriesTitle = video.series?.title_clean ?? video.series?.title_raw ?? video.series?.title ?? null;
   const seriesTitle = rawSeriesTitle ? rawSeriesTitle.trim() : null;
+  const width = video.width ?? null;
+  const height = video.height ?? null;
+  const orientation = detectVideoOrientationFromDimensions(width, height);
+  const seriesSlug = video.series?.slug ?? (video.series_id ? `series-${video.series_id}` : null);
 
   return {
     id: video.id,
     title: video.title,
+    description: video.description ?? null,
     public_url: video.public_url,
     thumbnail_url: video.thumbnail_url,
     like_count: video.like_count,
@@ -615,10 +797,14 @@ function normalizeLegacyVideoRow(video: LegacyVideoRow): VideoData {
     created_at: video.created_at,
     series_id: video.series_id,
     series_title: seriesTitle,
+    series_slug: seriesSlug,
     episode_number_int: null,
     episode_number_str: null,
     watchPath: `/videos/${video.id}`,
     source: "legacy",
+    width,
+    height,
+    orientation,
   };
 }
 
@@ -641,20 +827,30 @@ function normalizeEpisodeRow(episode: EpisodeRow): VideoData | null {
   const safeTitle = title.length > 0 ? title : "タイトル未設定";
   const likeCount = videoFile.like_count ?? 0;
   const viewCount = videoFile.view_count ?? 0;
+  const width = videoFile.width ?? null;
+  const height = videoFile.height ?? null;
+  const orientation = detectVideoOrientationFromDimensions(width, height);
+  const seriesSlug = series?.slug ?? (seriesId ? `series-${seriesId}` : null);
+  const thumbnailUrl = episode.thumbnail_url ?? videoFile.thumbnail_url ?? null;
   return {
     id: episode.id,
     title: safeTitle,
+    description: episode.description ?? null,
     public_url: videoFile.public_url,
-    thumbnail_url: videoFile.thumbnail_url,
+    thumbnail_url: thumbnailUrl,
     like_count: likeCount,
     view_count: viewCount,
     created_at: episode.created_at,
     series_id: seriesId,
     series_title: seriesTitle,
+    series_slug: seriesSlug,
     episode_number_int: episode.episode_number_int ?? null,
     episode_number_str: episode.episode_number_str ?? null,
     watchPath: null,
     source: "hierarchy",
+    width,
+    height,
+    orientation,
   };
 }
 
@@ -752,6 +948,421 @@ function VideoListCardContent({ video }: { video: VideoData }) {
         </p>
       </div>
     </>
+  );
+}
+
+type VideoManagerModalProps = {
+  videos: VideoData[];
+  supabase: ReturnType<typeof getBrowserSupabaseClient>;
+  onClose: () => void;
+  onRefresh: () => Promise<void>;
+};
+
+type LegacyVideoDetailRow = {
+  title: string;
+  description: string | null;
+  thumbnail_url: string | null;
+};
+
+type EpisodeVideoDetailRow = {
+  title_raw: string | null;
+  title_clean: string | null;
+  description: string | null;
+  thumbnail_url: string | null;
+  video_file: {
+    thumbnail_url: string | null;
+  } | null;
+};
+
+function VideoManagerModal({ videos, supabase, onClose, onRefresh }: VideoManagerModalProps) {
+  const [mode, setMode] = useState<"list" | "edit" | "delete">("list");
+  const [selectedVideo, setSelectedVideo] = useState<VideoData | null>(null);
+  const [formState, setFormState] = useState({ title: "", description: "", thumbnailUrl: "" });
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isBusy, setIsBusy] = useState(false);
+  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
+
+  const sortedVideos = useMemo(() => {
+    return [...videos].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }, [videos]);
+
+  const resetSelection = () => {
+    setSelectedVideo(null);
+    setFormState({ title: "", description: "", thumbnailUrl: "" });
+    setMode("list");
+  };
+
+  const fetchVideoDetail = useCallback(
+    async (video: VideoData) => {
+      if (video.source === "legacy") {
+        const { data, error: detailError } = await supabase
+          .from("videos")
+          .select("title, description, thumbnail_url")
+          .eq("id", video.id)
+          .maybeSingle<LegacyVideoDetailRow>();
+
+        if (detailError || !data) {
+          throw detailError ?? new Error("動画情報が見つかりませんでした");
+        }
+
+        return {
+          title: data.title,
+          description: data.description ?? "",
+          thumbnailUrl: data.thumbnail_url ?? video.thumbnail_url ?? "",
+        };
+      }
+
+      const { data, error: episodeDetailError } = await supabase
+        .from("episodes")
+        .select("title_raw, title_clean, description, thumbnail_url, video_file:video_files(thumbnail_url)")
+        .eq("id", video.id)
+        .maybeSingle<EpisodeVideoDetailRow>();
+
+      if (episodeDetailError || !data) {
+        throw episodeDetailError ?? new Error("動画情報が見つかりませんでした");
+      }
+
+      const title = data.title_clean ?? data.title_raw ?? video.title;
+      const thumbnail = data.thumbnail_url ?? data.video_file?.thumbnail_url ?? video.thumbnail_url ?? "";
+
+      return {
+        title,
+        description: data.description ?? "",
+        thumbnailUrl: thumbnail,
+      };
+    },
+    [supabase],
+  );
+
+  const handleStartEdit = useCallback(
+    async (video: VideoData) => {
+      setError(null);
+      setFeedback(null);
+      setSelectedVideo(video);
+      setMode("edit");
+      setIsLoadingDetail(true);
+      try {
+        const detail = await fetchVideoDetail(video);
+        setFormState(detail);
+      } catch (unknownError) {
+        console.error("動画詳細の取得に失敗しました", unknownError);
+        setError("動画の詳細取得に失敗しました。時間をおいて再度お試しください。");
+        resetSelection();
+      } finally {
+        setIsLoadingDetail(false);
+      }
+    },
+    [fetchVideoDetail],
+  );
+
+  const handleStartDelete = useCallback((video: VideoData) => {
+    setError(null);
+    setFeedback(null);
+    setSelectedVideo(video);
+    setMode("delete");
+  }, []);
+
+  const handleFieldChange = useCallback(
+    (key: "title" | "description" | "thumbnailUrl") =>
+      (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const value = event.target.value;
+        setFormState((prev) => ({ ...prev, [key]: value }));
+      },
+    [],
+  );
+
+  const handleSubmit = useCallback(
+    async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      if (!selectedVideo) {
+        return;
+      }
+
+      const trimmedTitle = formState.title.trim();
+      if (trimmedTitle.length === 0) {
+        setError("タイトルを入力してください。");
+        return;
+      }
+
+      const trimmedDescription = formState.description.trim();
+      const trimmedThumbnail = formState.thumbnailUrl.trim();
+
+      const safeDescription = trimmedDescription.length > 0 ? trimmedDescription : null;
+      const safeThumbnail = trimmedThumbnail.length > 0 ? trimmedThumbnail : null;
+
+      setIsBusy(true);
+      setError(null);
+
+      try {
+        if (selectedVideo.source === "legacy") {
+          const { error: updateError } = await supabase
+            .from("videos")
+            .update({
+              title: trimmedTitle,
+              description: safeDescription,
+              thumbnail_url: safeThumbnail,
+            })
+            .eq("id", selectedVideo.id);
+
+          if (updateError) {
+            throw updateError;
+          }
+        } else {
+          const { error: episodeUpdateError } = await supabase
+            .from("episodes")
+            .update({
+              title_raw: trimmedTitle,
+              title_clean: trimmedTitle,
+              description: safeDescription,
+              thumbnail_url: safeThumbnail,
+            })
+            .eq("id", selectedVideo.id);
+
+          if (episodeUpdateError) {
+            throw episodeUpdateError;
+          }
+
+          const { error: fileUpdateError } = await supabase
+            .from("video_files")
+            .update({
+              thumbnail_url: safeThumbnail,
+            })
+            .eq("episode_id", selectedVideo.id);
+
+          if (fileUpdateError) {
+            throw fileUpdateError;
+          }
+        }
+
+        await onRefresh();
+        setFeedback("動画情報を更新しました。");
+        resetSelection();
+      } catch (unknownError) {
+        console.error("動画情報の更新に失敗しました", unknownError);
+        setError("動画情報の更新に失敗しました。時間をおいて再度お試しください。");
+      } finally {
+        setIsBusy(false);
+      }
+    },
+    [formState.description, formState.thumbnailUrl, formState.title, onRefresh, selectedVideo, supabase],
+  );
+
+  const handleDelete = useCallback(async () => {
+    if (!selectedVideo) {
+      return;
+    }
+
+    setIsBusy(true);
+    setError(null);
+
+    try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+
+      if (sessionError || !sessionData.session?.access_token) {
+        throw new Error("認証情報の取得に失敗しました。再度ログインし直してください。");
+      }
+
+      const endpoint =
+        selectedVideo.source === "legacy" ? `/api/videos/${selectedVideo.id}` : `/api/episodes/${selectedVideo.id}`;
+
+      const response = await fetch(endpoint, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as { message?: string } | null;
+        throw new Error(payload?.message ?? "動画の削除に失敗しました。時間をおいて再度お試しください。");
+      }
+
+      await onRefresh();
+      setFeedback("動画を削除しました。");
+      resetSelection();
+    } catch (unknownError) {
+      console.error("動画の削除に失敗しました", unknownError);
+      const message =
+        unknownError instanceof Error ? unknownError.message : "動画の削除に失敗しました。時間をおいて再度お試しください。";
+      setError(message);
+    } finally {
+      setIsBusy(false);
+    }
+  }, [onRefresh, selectedVideo, supabase]);
+
+  const handleBackToList = useCallback(() => {
+    setError(null);
+    resetSelection();
+  }, []);
+
+  const renderList = () => {
+    if (sortedVideos.length === 0) {
+      return <p className="video-manager__empty">公開済みの動画がまだありません。</p>;
+    }
+
+    return (
+      <ul className="video-manager__list">
+        {sortedVideos.map((video) => {
+          const isFeed = isPortraitVideo(video);
+          const badgeLabel = isFeed ? "フィード" : "シリーズ";
+          const publishedAt = new Date(video.created_at).toLocaleDateString("ja-JP");
+
+          return (
+            <li key={video.id} className="video-manager__item">
+              <div className="video-manager__thumb" aria-hidden>
+                {video.thumbnail_url ? (
+                  <Image src={video.thumbnail_url} alt="" fill sizes="120px" className="video-manager__image" />
+                ) : (
+                  <span className="video-manager__thumb-placeholder">サムネイルなし</span>
+                )}
+              </div>
+              <div className="video-manager__meta">
+                <div className="video-manager__meta-header">
+                  <span className={`video-manager__badge${isFeed ? " video-manager__badge--feed" : " video-manager__badge--series"}`}>
+                    {badgeLabel}
+                  </span>
+                  {video.series_title && !isFeed && (
+                    <span className="video-manager__series">{video.series_title}</span>
+                  )}
+                </div>
+                <h3 className="video-manager__title">{video.title}</h3>
+                <p className="video-manager__stats">
+                  {video.view_count.toLocaleString()} 再生・{video.like_count.toLocaleString()} いいね
+                </p>
+                <p className="video-manager__date">公開日: {publishedAt}</p>
+              </div>
+              <div className="video-manager__actions">
+                <button type="button" className="video-manager__action" onClick={() => handleStartEdit(video)}>
+                  編集
+                </button>
+                <button
+                  type="button"
+                  className="video-manager__action video-manager__action--danger"
+                  onClick={() => handleStartDelete(video)}
+                >
+                  削除
+                </button>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    );
+  };
+
+  const renderEdit = () => {
+    if (!selectedVideo) {
+      return null;
+    }
+
+    if (isLoadingDetail) {
+      return <p className="video-manager__loading">動画情報を読み込んでいます...</p>;
+    }
+
+    return (
+      <form className="video-manager__form" onSubmit={handleSubmit}>
+        <div className="video-manager__field">
+          <label htmlFor="video-manager-title">タイトル</label>
+          <input
+            id="video-manager-title"
+            className="video-manager__input"
+            value={formState.title}
+            onChange={handleFieldChange("title")}
+            placeholder="動画のタイトル"
+            required
+            disabled={isBusy}
+          />
+        </div>
+        <div className="video-manager__field">
+          <label htmlFor="video-manager-description">説明</label>
+          <textarea
+            id="video-manager-description"
+            className="video-manager__textarea"
+            value={formState.description}
+            onChange={handleFieldChange("description")}
+            placeholder="視聴者向けの説明文"
+            rows={5}
+            disabled={isBusy}
+          />
+        </div>
+        <div className="video-manager__field">
+          <label htmlFor="video-manager-thumbnail">サムネイルURL</label>
+          <input
+            id="video-manager-thumbnail"
+            className="video-manager__input"
+            value={formState.thumbnailUrl}
+            onChange={handleFieldChange("thumbnailUrl")}
+            placeholder="https://..."
+            disabled={isBusy}
+          />
+          <p className="video-manager__hint">空欄にすると既存のサムネイルURLは削除されます。</p>
+        </div>
+        <div className="video-manager__form-actions">
+          <button type="button" className="video-manager__action video-manager__action--ghost" onClick={handleBackToList}>
+            一覧に戻る
+          </button>
+          <button type="submit" className="video-manager__action video-manager__action--primary" disabled={isBusy}>
+            {isBusy ? "保存中..." : "変更を保存"}
+          </button>
+        </div>
+      </form>
+    );
+  };
+
+  const renderDelete = () => {
+    if (!selectedVideo) {
+      return null;
+    }
+
+    return (
+      <div className="video-manager__confirm">
+        <p>
+          <strong>{selectedVideo.title}</strong>
+          を削除しますか？この操作は元に戻せません。
+        </p>
+        <div className="video-manager__form-actions">
+          <button type="button" className="video-manager__action video-manager__action--ghost" onClick={handleBackToList}>
+            キャンセル
+          </button>
+          <button
+            type="button"
+            className="video-manager__action video-manager__action--danger"
+            onClick={handleDelete}
+            disabled={isBusy}
+          >
+            {isBusy ? "削除中..." : "削除する"}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  let body: ReactNode;
+  if (mode === "edit") {
+    body = renderEdit();
+  } else if (mode === "delete") {
+    body = renderDelete();
+  } else {
+    body = renderList();
+  }
+
+  return (
+    <div className="profile-dashboard__modal" role="dialog" aria-modal="true" aria-label="動画の管理">
+      <div className="profile-dashboard__modal-panel profile-dashboard__modal-panel--wide">
+        <div className="profile-dashboard__modal-header">
+          <h2>動画を管理</h2>
+          <button type="button" className="profile-dashboard__modal-close" onClick={onClose}>
+            閉じる
+          </button>
+        </div>
+        <div className="video-manager">
+          {feedback && <p className="video-manager__feedback">{feedback}</p>}
+          {error && <p className="video-manager__error">{error}</p>}
+          {body}
+        </div>
+      </div>
+    </div>
   );
 }
 

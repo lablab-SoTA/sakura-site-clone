@@ -3,6 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { PostgrestError } from "@supabase/supabase-js";
 
+import CreatorContentTabs, { type CreatorSeriesItem } from "@/components/creator/CreatorContentTabs";
+import type { FeedViewerItem } from "@/components/feed/FeedViewer";
+import { fetchAnimeList, isPortraitAnime } from "@/lib/anime";
+import { XANIME_THUMB_PLACEHOLDER } from "@/lib/placeholders";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 
 type ProfileRecord = {
@@ -18,6 +22,7 @@ type ProfileRecord = {
 type VideoData = {
   id: string;
   title: string;
+  description: string | null;
   public_url: string;
   thumbnail_url: string | null;
   like_count: number;
@@ -25,6 +30,7 @@ type VideoData = {
   created_at: string;
   series_id: string | null;
   series_title: string | null;
+  series_slug: string | null;
   episode_number_int: number | null;
   episode_number_str: string | null;
   watchPath: string | null;
@@ -34,6 +40,7 @@ type VideoData = {
 type LegacyVideoRow = {
   id: string;
   title: string;
+  description: string | null;
   public_url: string;
   thumbnail_url: string | null;
   like_count: number;
@@ -52,9 +59,12 @@ type EpisodeRow = {
   id: string;
   title_clean: string | null;
   title_raw: string | null;
+  description: string | null;
   episode_number_int: number | null;
   episode_number_str: string | null;
   created_at: string;
+  thumbnail_url: string | null;
+  tags: string[] | null;
   season: {
     id: string;
     name: string | null;
@@ -79,18 +89,33 @@ type EpisodeRow = {
   } | null;
 };
 
-type VideoGroup = {
-  key: string;
-  title: string;
-  videos: VideoData[];
-};
-
 function isMissingColumn(error: PostgrestError | null | undefined): boolean {
   return error?.code === "42703";
 }
 
 function isMissingTable(error: PostgrestError | null | undefined): boolean {
   return error?.code === "PGRST205";
+}
+
+function calculateFeedScore(views: number, likes: number, createdAt: string | null | undefined): number {
+  const now = Date.now();
+  const createdTime = createdAt ? new Date(createdAt).getTime() : now;
+  const isValid = Number.isFinite(createdTime);
+  const ageHours = Math.max(1, (now - (isValid ? createdTime : now)) / (1000 * 60 * 60));
+  const recencyBoost = 80000 / ageHours;
+  const likeBoost = likes * 16;
+  const viewScore = views * 0.55;
+  return recencyBoost + likeBoost + viewScore;
+}
+
+function resolvePoster(poster?: string | null, fallback?: string | null): string {
+  if (poster && poster.length > 0) {
+    return poster;
+  }
+  if (fallback && fallback.length > 0) {
+    return fallback;
+  }
+  return XANIME_THUMB_PLACEHOLDER;
 }
 
 export const metadata = {
@@ -119,7 +144,9 @@ export default async function UserProfilePage({
 
   const legacyVideoQuery = await supabase
     .from("videos")
-    .select("id, title, public_url, thumbnail_url, like_count, view_count, created_at, series_id, series:series(*)")
+    .select(
+      "id, title, description, public_url, thumbnail_url, like_count, view_count, created_at, series_id, series:series(*)",
+    )
     .eq("owner_id", id)
     .eq("visibility", "PUBLIC")
     .eq("status", "PUBLISHED")
@@ -133,7 +160,7 @@ export default async function UserProfilePage({
     if (isMissingColumn(legacyVideoError)) {
       const fallbackVideos = await supabase
         .from("videos")
-        .select("id, title, public_url, thumbnail_url, like_count, view_count, created_at, series_id")
+        .select("id, title, description, public_url, thumbnail_url, like_count, view_count, created_at, series_id")
         .eq("owner_id", id)
         .eq("visibility", "PUBLIC")
         .eq("status", "PUBLISHED")
@@ -156,7 +183,7 @@ export default async function UserProfilePage({
   const { data: episodeRows, error: episodeError } = await supabase
     .from("episodes")
     .select(
-      "id, title_clean, title_raw, episode_number_int, episode_number_str, created_at, season:seasons(id, name, season_number, series:series(*)), video_file:video_files(id, owner_id, public_url, thumbnail_url, like_count, view_count, visibility, status)",
+      "id, title_clean, title_raw, description, thumbnail_url, tags, episode_number_int, episode_number_str, created_at, season:seasons(id, name, season_number, series:series(*)), video_file:video_files(id, owner_id, public_url, thumbnail_url, like_count, view_count, visibility, status)",
     )
     .eq("video_file.owner_id", id)
     .not("video_file", "is", null)
@@ -181,6 +208,7 @@ export default async function UserProfilePage({
         new Date(publishedVideos[0].created_at),
       )
     : null;
+  const creatorDisplayName = profile.display_name?.trim() && profile.display_name.trim().length > 0 ? profile.display_name.trim() : "匿名クリエイター";
   const socialLinks = [
     profile.sns_x?.trim() ? { href: profile.sns_x.trim(), label: "X (Twitter)" } : null,
     profile.sns_instagram?.trim() ? { href: profile.sns_instagram.trim(), label: "Instagram" } : null,
@@ -188,6 +216,60 @@ export default async function UserProfilePage({
   ].filter((link): link is { href: string; label: string } => Boolean(link));
   const bioText = profile.bio?.trim() ?? "";
   const hasBio = bioText.length > 0;
+
+  const animeCatalog = await fetchAnimeList();
+  const creatorAnime = animeCatalog.filter((anime) => {
+    const owner = anime.ownerId ?? anime.episodes.find((episode) => episode.ownerId)?.ownerId;
+    return owner === id;
+  });
+
+  const feedItems: FeedViewerItem[] = creatorAnime
+    .filter((anime) => isPortraitAnime(anime))
+    .flatMap((anime) => {
+      const episode = anime.episodes[0];
+      if (!episode) {
+        return [] as FeedViewerItem[];
+      }
+      const creatorProfile = anime.creatorProfile ?? episode.creatorProfile;
+      return [
+        {
+          id: episode.id,
+          title: episode.title,
+          description: episode.synopsis ?? anime.synopsis ?? "",
+          src: episode.video.src,
+          poster: resolvePoster(episode.video.poster, anime.thumbnail),
+          creatorName: creatorProfile?.displayName ?? creatorDisplayName,
+          creatorId: creatorProfile?.id ?? id,
+          creatorAvatar: creatorProfile?.avatarUrl ?? profile.avatar_url ?? null,
+          views: episode.metrics?.views ?? 0,
+          likes: episode.metrics?.likes ?? 0,
+          createdAt: episode.createdAt ?? null,
+          score: calculateFeedScore(
+            episode.metrics?.views ?? 0,
+            episode.metrics?.likes ?? 0,
+            episode.createdAt ?? null,
+          ),
+        },
+      ];
+    })
+    .sort((a, b) => b.score - a.score);
+
+  const seriesItems: CreatorSeriesItem[] = creatorAnime
+    .filter((anime) => !isPortraitAnime(anime))
+    .map((anime) => {
+      const latestEpisode =
+        [...anime.episodes].reverse().find((episode) => episode.createdAt) ??
+        anime.episodes[anime.episodes.length - 1];
+      return {
+        slug: anime.slug,
+        title: anime.title,
+        poster: resolvePoster(latestEpisode?.video.poster, anime.thumbnail),
+        episodeCount: anime.episodes.length,
+        updatedAt: latestEpisode?.createdAt ?? null,
+        views: anime.metrics?.views ?? 0,
+      } satisfies CreatorSeriesItem;
+    })
+    .sort((a, b) => b.views - a.views);
 
   return (
     <div className="creator-page">
@@ -203,7 +285,7 @@ export default async function UserProfilePage({
         </div>
         <div className="creator-page__hero-body">
           <span className="creator-page__kicker">CREATOR</span>
-          <h1 className="creator-page__title">{profile.display_name ?? "匿名クリエイター"}</h1>
+          <h1 className="creator-page__title">{creatorDisplayName}</h1>
           {latestPublishedAt && (
             <p className="creator-page__update">最終更新 {latestPublishedAt}</p>
           )}
@@ -243,43 +325,9 @@ export default async function UserProfilePage({
             <span className="creator-page__section-kicker">PORTFOLIO</span>
             <h2 className="creator-page__section-title">公開中の作品</h2>
           </div>
-          {videoCount > 0 && (
-            <p className="creator-page__section-lede">
-              {videoCount.toLocaleString()}件の作品が公開されています。
-            </p>
-          )}
+          <p className="creator-page__section-lede">フィードとシリーズをタブで切り替えてご覧いただけます。</p>
         </div>
-        {videoCount > 0 ? (
-          <div className="profile-dashboard__panel">
-            <div className="profile-dashboard__series-list">
-              {groupVideosBySeries(publishedVideos).map((group) => (
-                <section key={group.key} className="profile-dashboard__series-group" aria-label={`${group.title}の作品一覧`}>
-                  <div className="profile-dashboard__series-header">
-                    <h3 className="profile-dashboard__series-title">{group.title}</h3>
-                    <span className="profile-dashboard__series-count">{group.videos.length}本</span>
-                  </div>
-                  <ul className="profile-dashboard__video-list">
-                    {group.videos.map((video) => (
-                      <li key={video.id} className="profile-dashboard__video-card">
-                        {video.watchPath ? (
-                          <Link href={video.watchPath}>
-                            <VideoListCardContent video={video} />
-                          </Link>
-                        ) : (
-                          <a href={video.public_url} target="_blank" rel="noreferrer">
-                            <VideoListCardContent video={video} />
-                          </a>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <p className="creator-page__empty">まだ公開された作品はありません。</p>
-        )}
+        <CreatorContentTabs feedItems={feedItems} seriesItems={seriesItems} />
       </section>
     </div>
   );
@@ -292,6 +340,7 @@ function normalizeLegacyVideoRow(video: LegacyVideoRow): VideoData {
   return {
     id: video.id,
     title: video.title,
+    description: video.description ?? null,
     public_url: video.public_url,
     thumbnail_url: video.thumbnail_url,
     like_count: video.like_count,
@@ -299,6 +348,7 @@ function normalizeLegacyVideoRow(video: LegacyVideoRow): VideoData {
     created_at: video.created_at,
     series_id: video.series_id,
     series_title: seriesTitle,
+    series_slug: (video.series?.slug ?? null) as string | null,
     episode_number_int: null,
     episode_number_str: null,
     watchPath: `/videos/${video.id}`,
@@ -329,13 +379,15 @@ function normalizeEpisodeRow(episode: EpisodeRow): VideoData | null {
   return {
     id: episode.id,
     title: safeTitle,
+    description: episode.description ?? null,
     public_url: videoFile.public_url,
-    thumbnail_url: videoFile.thumbnail_url,
+    thumbnail_url: episode.thumbnail_url ?? videoFile.thumbnail_url,
     like_count: likeCount,
     view_count: viewCount,
     created_at: episode.created_at,
     series_id: seriesId,
     series_title: seriesTitle,
+    series_slug: (series?.slug ?? null) as string | null,
     episode_number_int: episode.episode_number_int ?? null,
     episode_number_str: episode.episode_number_str ?? null,
     watchPath: null,
@@ -360,48 +412,4 @@ function mergeAndSortVideos(...lists: VideoData[][]): VideoData[] {
     }
     return 0;
   });
-}
-
-function groupVideosBySeries(videos: VideoData[]): VideoGroup[] {
-  const groups: VideoGroup[] = [];
-  const map = new Map<string, VideoGroup>();
-
-  videos.forEach((video) => {
-    const hasSeries = Boolean(video.series_id);
-    const key = hasSeries ? `series-${video.series_id}` : "standalone";
-    const title = hasSeries ? video.series_title ?? "シリーズ名未設定" : "シリーズ未設定";
-
-    if (!map.has(key)) {
-      const group: VideoGroup = { key, title, videos: [] };
-      map.set(key, group);
-      groups.push(group);
-    }
-
-    map.get(key)?.videos.push(video);
-  });
-
-  return groups;
-}
-
-function VideoListCardContent({ video }: { video: VideoData }) {
-  return (
-    <>
-      <div className="profile-dashboard__video-thumb" aria-hidden>
-        {video.thumbnail_url ? (
-          <Image
-            src={video.thumbnail_url}
-            alt=""
-            fill
-            sizes="(max-width: 720px) 50vw, 240px"
-            className="profile-dashboard__video-image"
-          />
-        ) : (
-          <span className="profile-dashboard__video-placeholder">サムネイルなし</span>
-        )}
-      </div>
-      <div className="profile-dashboard__video-body">
-        <h4 className="profile-dashboard__video-title">{video.title}</h4>
-      </div>
-    </>
-  );
 }

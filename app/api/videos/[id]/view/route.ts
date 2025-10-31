@@ -37,5 +37,15 @@ export async function POST(
     return NextResponse.json({ message: "再生数の更新に失敗しました。" }, { status: 500 });
   }
 
-  return NextResponse.json({ viewCount: updated?.view_count ?? nextCount });
+  const syncedCount = updated?.view_count ?? nextCount;
+  const { error: fileUpdateError } = await supabase
+    .from("video_files")
+    .update({ view_count: syncedCount, updated_at: new Date().toISOString() })
+    .eq("episode_id", videoId);
+
+  if (fileUpdateError) {
+    console.error("video_files の再生数更新に失敗しました:", fileUpdateError);
+  }
+
+  return NextResponse.json({ viewCount: syncedCount });
 }

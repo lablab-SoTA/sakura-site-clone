@@ -14,20 +14,39 @@
  * generateSlug("第1話「タイトル」") // "episode-1-title"
  */
 export function generateSlug(text: string): string {
-  // 簡易的な実装（実際のプロジェクトでは日本語→ローマ字変換ライブラリを使用推奨）
-  // 例: https://github.com/lovell/hepburn や https://github.com/Kanasansoft/wanakana
-  
-  let slug = text
-    // 小文字に変換
+  const normalized = text.normalize("NFKC");
+
+  let slug = normalized
     .toLowerCase()
-    // スペースをハイフンに変換
-    .replace(/\s+/g, "-")
-    // 日本語以外の特殊文字を削除（英数字とハイフンのみ残す）
-    .replace(/[^a-z0-9-]/g, "")
-    // 連続するハイフンを1つに
+    .replace(/[\s_]+/g, "-")
+    // すべての文字カテゴリ(Letter/Number)を許可して記号のみ除去
+    .replace(/[^\p{L}\p{N}-]+/gu, "")
     .replace(/-+/g, "-")
-    // 先頭・末尾のハイフンを削除
     .replace(/^-|-$/g, "");
+
+  if (!slug) {
+    slug = Array.from(normalized.trim().toLowerCase())
+      .map((char) => {
+        if (/^[a-z0-9-]$/.test(char)) {
+          return char;
+        }
+        if (char === " " || char === "_") {
+          return "-";
+        }
+        const code = char.codePointAt(0);
+        if (!code) {
+          return "";
+        }
+        return `u${code.toString(16)}`;
+      })
+      .join("")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "");
+  }
+
+  if (!slug) {
+    slug = `item-${Date.now().toString(36)}`;
+  }
 
   return slug;
 }
@@ -175,5 +194,4 @@ export function generateEpisodeNumberStr(
       return `第${episodeNumber}話`;
   }
 }
-
 

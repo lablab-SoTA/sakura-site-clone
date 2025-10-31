@@ -10,7 +10,8 @@ export default function UploadPage() {
       <div className="upload__panel">
         <h1 className="upload__title">動画をアップロード</h1>
         <p className="upload__description">
-          単発投稿、新規シリーズ、既存シリーズの続話から選んで動画を公開できます。
+          フィード投稿（縦型 9:16）とシリーズ投稿（横型 16:9）をここから公開できます。
+          まず投稿タイプを選んでから、必要な情報を入力してください。単発のフィード投稿も、新規シリーズや既存シリーズへの追加も歓迎です。
         </p>
         <UploadForm />
       </div>
