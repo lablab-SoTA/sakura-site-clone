@@ -279,7 +279,7 @@ export default function FeedViewer({ items, initialId }: FeedViewerProps) {
                     alt={`${item.title}のサムネイル`}
                     fill
                     className={styles.upNextPoster}
-                    sizes="120px"
+                    sizes="(max-width: 640px) 88vw, 120px"
                   />
                 </div>
                 <div className={styles.upNextBody}>

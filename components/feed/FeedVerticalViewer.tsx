@@ -54,6 +54,7 @@ function Avatar({ name, src }: { name: string; src: string | null }) {
 
 type FeedVideoProps = {
   item: FeedViewerItem;
+  viewCount: number;
   isActive: boolean;
   isMuted: boolean;
   onToggleMute: () => void;
@@ -66,6 +67,7 @@ type FeedVideoProps = {
 
 function FeedVideo({
   item,
+  viewCount,
   isActive,
   isMuted,
   onToggleMute,
@@ -324,7 +326,7 @@ function FeedVideo({
               )}
             </div>
             <span className={styles.creatorMeta}>
-              {formatDaysAgo(item.createdAt)}・{formatNumberJP(item.views)}回再生
+              {formatDaysAgo(item.createdAt)}・{formatNumberJP(viewCount)}回再生
             </span>
           </div>
         </div>
@@ -384,9 +386,18 @@ export default function FeedVerticalViewer({ items, initialId }: FeedVerticalVie
   const [activeIndex, setActiveIndex] = useState(initialIndex);
   const [isMuted, setIsMuted] = useState(true);
   const activeIndexRef = useRef(initialIndex);
+  const [viewCountMap, setViewCountMap] = useState<Record<string, number>>(() => {
+    const initialMap: Record<string, number> = {};
+    items.forEach((item) => {
+      initialMap[item.id] = item.views;
+    });
+    return initialMap;
+  });
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [likedMap, setLikedMap] = useState<Record<string, boolean>>({});
+  const viewedIdsRef = useRef<Set<string>>(new Set());
+  const viewDelayTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     activeIndexRef.current = activeIndex;
@@ -451,6 +462,24 @@ export default function FeedVerticalViewer({ items, initialId }: FeedVerticalVie
     container.scrollTo({ top: target.offsetTop, behavior: "auto" });
   }, [initialIndex]);
 
+  useEffect(() => {
+    setViewCountMap((previous) => {
+      const nextMap: Record<string, number> = {};
+      items.forEach((item) => {
+        nextMap[item.id] = previous[item.id] ?? item.views;
+      });
+      return nextMap;
+    });
+
+    const nextViewed = new Set<string>();
+    items.forEach((item) => {
+      if (viewedIdsRef.current.has(item.id)) {
+        nextViewed.add(item.id);
+      }
+    });
+    viewedIdsRef.current = nextViewed;
+  }, [items]);
+
   const handleToggleMute = useCallback(() => {
     setIsMuted((prev) => !prev);
   }, []);
@@ -471,6 +500,81 @@ export default function FeedVerticalViewer({ items, initialId }: FeedVerticalVie
 
   const handleNext = useCallback(() => {
     handleAdvance(1);
+  }, [handleAdvance]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) {
+      return;
+    }
+
+    let accumulatedDelta = 0;
+    let isLocked = false;
+    let unlockTimer: number | null = null;
+    const threshold = 48;
+    const cooldown = 280;
+
+    const releaseLock = () => {
+      isLocked = false;
+      accumulatedDelta = 0;
+      if (unlockTimer !== null) {
+        window.clearTimeout(unlockTimer);
+        unlockTimer = null;
+      }
+    };
+
+    const handleWheel = (event: WheelEvent) => {
+      const isVerticalIntent = Math.abs(event.deltaY) >= Math.abs(event.deltaX);
+      if (!isVerticalIntent) {
+        return;
+      }
+
+      // ホイール操作で1枚ずつ移動させるためデフォルトのスクロールを抑制する。
+      event.preventDefault();
+
+      const pixelDelta =
+        event.deltaMode === WheelEvent.DOM_DELTA_LINE
+          ? event.deltaY * 16
+          : event.deltaMode === WheelEvent.DOM_DELTA_PAGE
+            ? event.deltaY * 240
+            : event.deltaY;
+
+      if (pixelDelta === 0) {
+        return;
+      }
+
+      accumulatedDelta += pixelDelta;
+
+      if (isLocked) {
+        if (unlockTimer !== null) {
+          window.clearTimeout(unlockTimer);
+        }
+        unlockTimer = window.setTimeout(() => {
+          releaseLock();
+        }, cooldown);
+        return;
+      }
+
+      if (Math.abs(accumulatedDelta) < threshold) {
+        return;
+      }
+
+      isLocked = true;
+      const step = accumulatedDelta > 0 ? 1 : -1;
+      accumulatedDelta = 0;
+      handleAdvance(step);
+
+      unlockTimer = window.setTimeout(() => {
+        releaseLock();
+      }, cooldown);
+    };
+
+    container.addEventListener("wheel", handleWheel, { passive: false });
+
+    return () => {
+      container.removeEventListener("wheel", handleWheel);
+      releaseLock();
+    };
   }, [handleAdvance]);
 
   useEffect(() => {
@@ -513,6 +617,73 @@ export default function FeedVerticalViewer({ items, initialId }: FeedVerticalVie
       authListener?.subscription.unsubscribe();
     };
   }, [supabase]);
+
+  useEffect(() => {
+    const currentItem = items[activeIndex];
+    if (!currentItem) {
+      return;
+    }
+
+    if (viewDelayTimeoutRef.current !== null) {
+      window.clearTimeout(viewDelayTimeoutRef.current);
+      viewDelayTimeoutRef.current = null;
+    }
+
+    viewDelayTimeoutRef.current = window.setTimeout(async () => {
+      const videoId = currentItem.id;
+      if (viewedIdsRef.current.has(videoId)) {
+        return;
+      }
+
+      const storageKey = `xanime_view_${videoId}`;
+
+      if (typeof window !== "undefined") {
+        try {
+          if (window.localStorage.getItem(storageKey)) {
+            viewedIdsRef.current.add(videoId);
+            return;
+          }
+        } catch {
+          // localStorage が利用できない環境ではそのまま進める。
+        }
+      }
+
+      try {
+        const response = await fetch(`/api/videos/${videoId}/view`, {
+          method: "POST",
+        });
+        if (!response.ok) {
+          return;
+        }
+        const payload = (await response.json().catch(() => null)) as { viewCount?: number } | null;
+        setViewCountMap((prev) => {
+          const previous = prev[videoId] ?? currentItem.views;
+          const next = payload?.viewCount ?? previous + 1;
+          if (next === previous) {
+            return prev;
+          }
+          return { ...prev, [videoId]: next };
+        });
+        viewedIdsRef.current.add(videoId);
+        if (typeof window !== "undefined") {
+          try {
+            window.localStorage.setItem(storageKey, "1");
+          } catch {
+            // localStorage へ保存できない場合は無視する。
+          }
+        }
+      } catch {
+        // 通信エラー時は次回の視聴時に再試行する。
+      }
+    }, 800);
+
+    return () => {
+      if (viewDelayTimeoutRef.current !== null) {
+        window.clearTimeout(viewDelayTimeoutRef.current);
+        viewDelayTimeoutRef.current = null;
+      }
+    };
+  }, [activeIndex, items]);
 
   useEffect(() => {
     let isActive = true;
@@ -589,6 +760,7 @@ export default function FeedVerticalViewer({ items, initialId }: FeedVerticalVie
           >
             <FeedVideo
               item={item}
+              viewCount={viewCountMap[item.id] ?? item.views}
               isActive={index === activeIndex}
               isMuted={isMuted}
               onToggleMute={handleToggleMute}

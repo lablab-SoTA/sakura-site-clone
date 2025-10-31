@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { PostgrestError } from "@supabase/supabase-js";
+import type { ReactNode } from "react";
 
 import CreatorContentTabs, { type CreatorSeriesItem } from "@/components/creator/CreatorContentTabs";
 import type { FeedViewerItem } from "@/components/feed/FeedViewer";
@@ -118,6 +119,46 @@ function resolvePoster(poster?: string | null, fallback?: string | null): string
   return XANIME_THUMB_PLACEHOLDER;
 }
 
+const snsIcons: Record<"x" | "instagram" | "youtube", ReactNode> = {
+  x: (
+    <svg viewBox="0 0 24 24" aria-hidden width="20" height="20">
+      <path
+        fill="currentColor"
+        d="M3.6 2h5.08l4.32 6.52L17.84 2H21l-7.04 9.4 7.4 10.6h-5.08l-4.64-6.96L6.24 22H3l7.44-9.92z"
+      />
+    </svg>
+  ),
+  instagram: (
+    <svg viewBox="0 0 24 24" aria-hidden width="20" height="20">
+      <path
+        fill="currentColor"
+        d="M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5zm0 2a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3zm5 3.5a5.5 5.5 0 1 1 0 11a5.5 5.5 0 0 1 0-11zm0 2a3.5 3.5 0 1 0 0 7a3.5 3.5 0 0 0 0-7zm6.25-2.75a1.25 1.25 0 1 1-2.5 0a1.25 1.25 0 0 1 2.5 0z"
+      />
+    </svg>
+  ),
+  youtube: (
+    <svg viewBox="0 0 24 24" aria-hidden width="20" height="20">
+      <path
+        fill="currentColor"
+        d="M21.6 7.2a2.6 2.6 0 0 0-1.84-1.84C18.16 5 12 5 12 5s-6.16 0-7.76.36A2.6 2.6 0 0 0 2.4 7.2A27 27 0 0 0 2 12a27 27 0 0 0 .4 4.8a2.6 2.6 0 0 0 1.84 1.84C5.84 19 12 19 12 19s6.16 0 7.76-.36a2.6 2.6 0 0 0 1.84-1.84A27 27 0 0 0 22 12a27 27 0 0 0-.4-4.8zM10 15.5v-7l6 3.5z"
+      />
+    </svg>
+  ),
+};
+
+function getSnsLabel(key: "x" | "instagram" | "youtube") {
+  switch (key) {
+    case "x":
+      return "X を開く";
+    case "instagram":
+      return "Instagram を開く";
+    case "youtube":
+      return "YouTube を開く";
+    default:
+      return "外部リンクを開く";
+  }
+}
+
 export const metadata = {
   title: "クリエイターページ | xanime",
 };
@@ -209,11 +250,11 @@ export default async function UserProfilePage({
       )
     : null;
   const creatorDisplayName = profile.display_name?.trim() && profile.display_name.trim().length > 0 ? profile.display_name.trim() : "匿名クリエイター";
-  const socialLinks = [
-    profile.sns_x?.trim() ? { href: profile.sns_x.trim(), label: "X (Twitter)" } : null,
-    profile.sns_instagram?.trim() ? { href: profile.sns_instagram.trim(), label: "Instagram" } : null,
-    profile.sns_youtube?.trim() ? { href: profile.sns_youtube.trim(), label: "YouTube" } : null,
-  ].filter((link): link is { href: string; label: string } => Boolean(link));
+  const snsLinks = [
+    profile.sns_x?.trim() ? { key: "x" as const, href: profile.sns_x.trim() } : null,
+    profile.sns_instagram?.trim() ? { key: "instagram" as const, href: profile.sns_instagram.trim() } : null,
+    profile.sns_youtube?.trim() ? { key: "youtube" as const, href: profile.sns_youtube.trim() } : null,
+  ].filter((link): link is { key: "x" | "instagram" | "youtube"; href: string } => Boolean(link));
   const bioText = profile.bio?.trim() ?? "";
   const hasBio = bioText.length > 0;
 
@@ -273,52 +314,50 @@ export default async function UserProfilePage({
 
   return (
     <div className="creator-page">
-      <header className="creator-page__hero">
-        <div className="creator-page__hero-visual" aria-hidden>
-          <div className="creator-page__avatar">
-            {profile.avatar_url ? (
-              <Image src={profile.avatar_url} alt="" fill sizes="140px" unoptimized />
-            ) : (
-              <span>{profile.display_name?.[0] ?? "?"}</span>
-            )}
+      <section className="profile-dashboard__header">
+        <div className="profile-dashboard__header-content">
+          <div className="profile-dashboard__meta">
+            <div className="profile-dashboard__header-row">
+              <div
+                className="profile-dashboard__avatar profile-dashboard__avatar--static"
+                role="img"
+                aria-label={`${creatorDisplayName}のプロフィール画像`}
+              >
+                {profile.avatar_url ? (
+                  <Image src={profile.avatar_url} alt="プロフィール画像" fill sizes="96px" unoptimized />
+                ) : (
+                  <span>{creatorDisplayName.trim().charAt(0).toUpperCase() || "?"}</span>
+                )}
+              </div>
+              <div className="profile-dashboard__identity">
+                <h1 className="profile-dashboard__name">{creatorDisplayName}</h1>
+              </div>
+              <div className="profile-dashboard__stats-row">
+                <p className="profile-dashboard__stat-line">
+                  {latestPublishedAt && <span>最終更新 {latestPublishedAt}</span>}
+                  <span>公開作品 {videoCount.toLocaleString()}</span>
+                  <span>総再生数 {totalViews.toLocaleString()}</span>
+                  <span>総いいね {totalLikes.toLocaleString()}</span>
+                </p>
+                {snsLinks.length > 0 && (
+                  <ul className="profile-dashboard__sns" aria-label="SNSリンク">
+                    {snsLinks.map((item) => (
+                      <li key={item.href}>
+                        <Link href={item.href} target="_blank" rel="noreferrer" aria-label={getSnsLabel(item.key)}>
+                          {snsIcons[item.key]}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+            <p className={`profile-dashboard__bio${hasBio ? "" : " profile-dashboard__bio--muted"}`}>
+              {hasBio ? bioText : "プロフィール文はまだ設定されていません。"}
+            </p>
           </div>
         </div>
-        <div className="creator-page__hero-body">
-          <span className="creator-page__kicker">CREATOR</span>
-          <h1 className="creator-page__title">{creatorDisplayName}</h1>
-          {latestPublishedAt && (
-            <p className="creator-page__update">最終更新 {latestPublishedAt}</p>
-          )}
-          <p className={`creator-page__bio${hasBio ? "" : " creator-page__bio--empty"}`}>
-            {hasBio ? bioText : "プロフィール文はまだ設定されていません。"}
-          </p>
-          <ul className="creator-page__metrics" aria-label="クリエイターの公開状況">
-            <li className="creator-page__metric">
-              <span className="creator-page__metric-value">{videoCount.toLocaleString()}</span>
-              <span className="creator-page__metric-label">公開作品</span>
-            </li>
-            <li className="creator-page__metric">
-              <span className="creator-page__metric-value">{totalViews.toLocaleString()}</span>
-              <span className="creator-page__metric-label">総再生数</span>
-            </li>
-            <li className="creator-page__metric">
-              <span className="creator-page__metric-value">{totalLikes.toLocaleString()}</span>
-              <span className="creator-page__metric-label">総いいね</span>
-            </li>
-          </ul>
-          {socialLinks.length > 0 && (
-            <ul className="creator-page__links">
-              {socialLinks.map((link) => (
-                <li key={link.href}>
-                  <Link href={link.href} target="_blank" rel="noreferrer">
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </header>
+      </section>
       <section className="creator-page__videos">
         <div className="creator-page__section-head">
           <div>
