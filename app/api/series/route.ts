@@ -138,20 +138,26 @@ export async function POST(request: Request) {
       selectFields.push("slug");
     }
 
+    type SeriesMinimalRow = {
+      id: string;
+      slug?: string | null;
+    };
+
     const { data, error } = await supabase
       .from("series")
       .select(selectFields.join(", "))
       .match(filters)
       .order("created_at", { ascending: false })
-      .limit(1);
+      .limit(1)
+      .returns<SeriesMinimalRow[]>();
 
     if (error) {
       console.error("シリーズの再取得に失敗しました", error, filters);
       return null;
     }
 
-    const row = Array.isArray(data) ? data[0] : data;
-    if (!row?.id) {
+    const row = data?.[0];
+    if (!row) {
       return null;
     }
 

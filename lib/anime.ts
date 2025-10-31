@@ -813,7 +813,7 @@ export async function fetchAnimeBySlug(slug: string): Promise<Anime | undefined>
     }
 
     if (video.series_id) {
-      const seriesAnime = await fetchSeries(video.series_id);
+      const seriesAnime = await fetchSeries({ id: video.series_id });
       if (seriesAnime) {
         return seriesAnime;
       }

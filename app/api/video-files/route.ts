@@ -135,7 +135,10 @@ export async function POST(request: Request) {
 
   if (syncError) {
     console.error("動画レコードの同期に失敗しました:", syncError);
-    await supabase.from("video_files").delete().eq("id", data.id).catch(() => undefined);
+    const { error: cleanupError } = await supabase.from("video_files").delete().eq("id", data.id);
+    if (cleanupError) {
+      console.error("動画ファイルのロールバックに失敗しました:", cleanupError);
+    }
     return NextResponse.json({ message: "動画情報の同期に失敗しました。" }, { status: 500 });
   }
 
