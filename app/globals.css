@@ -1418,7 +1418,7 @@ a {
   box-shadow: 0 30px 60px rgba(0, 0, 0, 0.18);
   padding: var(--video-media-padding);
   position: sticky;
-  top: clamp(72px, 11vw, 120px);
+  top: calc(var(--safe-top) + clamp(56px, 10vw, 108px));
   max-height: min(82vh, 920px);
   z-index: 5;
 }

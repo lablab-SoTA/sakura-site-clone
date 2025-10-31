@@ -16,7 +16,7 @@ export default function BackButton() {
     router.push("/");
   }, [router]);
 
-  if (pathname === "/") {
+  if (pathname === "/" || pathname?.startsWith("/feed")) {
     return null;
   }
 
