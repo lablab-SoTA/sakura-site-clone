@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 import FeedVerticalViewer from "@/components/feed/FeedVerticalViewer";
 import { type FeedViewerItem } from "@/components/feed/FeedViewer";
 
@@ -67,16 +69,21 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
     })
     .sort((a, b) => b.score - a.score);
 
+  const pageClassName = items.length > 0 ? "feed-page feed-page--viewer" : "feed-page";
+  const pageStyle = items.length > 0
+    ? ({ "--feed-footer-offset": "calc(max(96px, var(--safe-bottom) + 36px))" } as CSSProperties)
+    : undefined;
+
   if (items.length === 0) {
     return (
-      <div className="feed-page">
+      <div className={pageClassName}>
         <p className="page-lede">フィード投稿がまだありません。最初の投稿をアップロードしてみましょう。</p>
       </div>
     );
   }
 
   return (
-    <div className="feed-page">
+    <div className={pageClassName} style={pageStyle}>
       <FeedVerticalViewer items={items} initialId={start ?? null} />
     </div>
   );

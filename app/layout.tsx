@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 
 import AgeGateQueryReset from "@/components/AgeGateQueryReset";
-import Header from "@/components/Header";
+import LayoutHeader from "@/components/LayoutHeader";
 import FooterNav from "@/components/FooterNav";
 import BackButton from "@/components/BackButton";
 
@@ -56,11 +56,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <AgeGateQueryReset />
         </Suspense>
         <div className="layout">
-          <Header primaryNav={primaryNav} />
+          <LayoutHeader primaryNav={primaryNav} />
           <main className="layout__main">
-            <div className="layout__back-button">
-              <BackButton />
-            </div>
+            <BackButton />
             {children}
           </main>
           <footer className="layout__footer">

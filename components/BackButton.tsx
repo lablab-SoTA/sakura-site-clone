@@ -21,13 +21,15 @@ export default function BackButton() {
   }
 
   return (
-    <button
-      type="button"
-      className="back-button"
-      onClick={handleClick}
-      aria-label="前のページへ戻る"
-    >
-      ← 戻る
-    </button>
+    <div className="layout__back-button">
+      <button
+        type="button"
+        className="back-button"
+        onClick={handleClick}
+        aria-label="前のページへ戻る"
+      >
+        ← 戻る
+      </button>
+    </div>
   );
 }

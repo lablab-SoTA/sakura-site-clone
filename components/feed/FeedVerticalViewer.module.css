@@ -160,3 +160,9 @@
     scroll-behavior: auto;
   }
 }
+
+@media (max-width: 768px) {
+  .overlayBottom {
+    padding-bottom: calc(clamp(20px, 7vw, 32px) + var(--feed-footer-offset, 0px));
+  }
+}

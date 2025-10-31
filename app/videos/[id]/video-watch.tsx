@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
   type ChangeEvent,
+  type CSSProperties,
   type ReactNode,
 } from "react";
 
@@ -558,11 +559,11 @@ export default function VideoWatch({
   const likeLabel = useMemo(() => (likeState === "liked" ? "いいね済み" : "いいね"), [likeState]);
   const saveLabel = isSaving ? "保存中..." : "変更を保存";
   const deleteLabel = isDeleting ? "削除中..." : "動画を削除";
-  const videoStyle = useMemo(() => {
+  const playerStyle = useMemo(() => {
     if (width && height && width > 0 && height > 0) {
       return {
-        aspectRatio: `${width} / ${height}`,
-      } as const;
+        "--video-aspect": `${width} / ${height}`,
+      } as CSSProperties;
     }
     return undefined;
   }, [height, width]);
@@ -617,17 +618,18 @@ export default function VideoWatch({
   return (
     <div className="video-watch">
       <div className="video-watch__media">
-        <video
-          ref={videoRef}
-          controls={controlsVisible}
-          autoPlay
-          playsInline
-          preload="auto"
-          src={src}
-          onPlay={handlePlay}
-          style={videoStyle}
-          controlsList="nodownload noplaybackrate"
-        />
+        <div className="video-watch__player" style={playerStyle}>
+          <video
+            ref={videoRef}
+            controls={controlsVisible}
+            autoPlay
+            playsInline
+            preload="auto"
+            src={src}
+            onPlay={handlePlay}
+            controlsList="nodownload noplaybackrate"
+          />
+        </div>
       </div>
       <div className="video-watch__body">
         <div>
