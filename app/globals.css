@@ -1909,6 +1909,28 @@ a {
   gap: 16px;
 }
 
+.profile-form__section {
+  display: grid;
+  gap: 14px;
+  padding: clamp(16px, 4vw, 22px);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(31, 34, 46, 0.08);
+}
+
+.profile-form__section-title {
+  margin: 0;
+  font-size: clamp(18px, 4vw, 20px);
+  font-weight: 600;
+  color: rgba(31, 34, 46, 0.92);
+}
+
+.profile-form__section-note {
+  margin: 0;
+  font-size: 14px;
+  color: rgba(31, 34, 46, 0.62);
+}
+
 .profile-form__field {
   display: grid;
   gap: 8px;
@@ -1996,6 +2018,15 @@ a {
 .profile-form__message {
   color: rgba(31, 34, 46, 0.7);
   font-size: 14px;
+}
+
+.profile-password {
+  display: grid;
+  gap: 12px;
+}
+
+.profile-password .button {
+  justify-self: start;
 }
 
 .avatar-cropper {
@@ -2186,11 +2217,11 @@ a {
 }
 
 .profile-dashboard__header-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: clamp(12px, 3vw, 20px);
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  column-gap: clamp(16px, 4vw, 24px);
+  row-gap: clamp(8px, 2vw, 16px);
+  align-items: start;
 }
 
 .profile-dashboard__identity {
@@ -2213,6 +2244,9 @@ a {
   list-style: none;
   margin: 0;
   padding: 0;
+  justify-self: end;
+  grid-column: 3;
+  align-self: center;
 }
 
 .profile-dashboard__sns li {
@@ -2409,33 +2443,35 @@ a {
   }
 
   .profile-dashboard__header-content {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
+    align-items: stretch;
+    text-align: left;
   }
 
   .profile-dashboard__meta {
     gap: 12px;
-    text-align: center;
+    text-align: left;
   }
 
   .profile-dashboard__header-row {
-    justify-content: center;
-    text-align: center;
+    grid-template-columns: auto minmax(0, 1fr);
+    justify-items: start;
+    text-align: left;
   }
 
   .profile-dashboard__identity {
-    text-align: center;
+    text-align: left;
   }
 
   .profile-dashboard__stat-line {
-    justify-content: center;
+    justify-content: flex-start;
   }
 
   .profile-dashboard__sns {
-    justify-content: center;
-    width: 100%;
+    justify-content: flex-start;
+    justify-self: start;
+    width: auto;
     gap: 12px;
+    grid-column: 1 / -1;
   }
 
   .profile-dashboard__bio {

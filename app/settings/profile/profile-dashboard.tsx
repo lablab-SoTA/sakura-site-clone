@@ -7,7 +7,6 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react
 import type { PostgrestError } from "@supabase/supabase-js";
 
 import ProfileForm from "./profile-form";
-import ChangePasswordForm from "./change-password-form";
 import { getBrowserSupabaseClient } from "@/lib/supabase/client";
 
 type ProfileData = {
@@ -464,20 +463,20 @@ export default function ProfileDashboard() {
     <div className="profile-dashboard">
       <section className="profile-dashboard__header">
         <div className="profile-dashboard__header-content">
-          <button
-            type="button"
-            className="profile-dashboard__avatar"
-            onClick={handleOpenEditor}
-            aria-label="プロフィールを編集"
-          >
-            {profile?.avatar_url ? (
-              <Image src={profile.avatar_url} alt="プロフィール画像" fill sizes="144px" />
-            ) : (
-              <span>{displayName.trim().charAt(0).toUpperCase() || "?"}</span>
-            )}
-          </button>
           <div className="profile-dashboard__meta">
             <div className="profile-dashboard__header-row">
+              <button
+                type="button"
+                className="profile-dashboard__avatar"
+                onClick={handleOpenEditor}
+                aria-label="プロフィールを編集"
+              >
+                {profile?.avatar_url ? (
+                  <Image src={profile.avatar_url} alt="プロフィール画像" fill sizes="144px" />
+                ) : (
+                  <span>{displayName.trim().charAt(0).toUpperCase() || "?"}</span>
+                )}
+              </button>
               <div className="profile-dashboard__identity">
                 <h1 className="profile-dashboard__name">{displayName}</h1>
                 <p className="profile-dashboard__stat-line">
@@ -564,12 +563,6 @@ export default function ProfileDashboard() {
             )}
           </div>
         </div>
-      </section>
-
-      <section className="profile-dashboard__panel" aria-label="パスワード設定">
-        <h2 className="profile-dashboard__panel-heading">パスワード設定</h2>
-        <p className="profile-dashboard__panel-note">現在のパスワードを確認のうえ、新しいパスワードに変更できます。</p>
-        <ChangePasswordForm />
       </section>
 
       <section className="profile-dashboard__logout" aria-label="アカウント操作">

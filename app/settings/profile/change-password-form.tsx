@@ -82,7 +82,7 @@ export default function ChangePasswordForm() {
 
   return (
     <form className="profile-password" onSubmit={handleSubmit}>
-      <label className="profile-password__field">
+      <label className="profile-password__field profile-form__field">
         <span>現在のパスワード</span>
         <input
           type="password"
@@ -92,7 +92,7 @@ export default function ChangePasswordForm() {
           autoComplete="current-password"
         />
       </label>
-      <label className="profile-password__field">
+      <label className="profile-password__field profile-form__field">
         <span>新しいパスワード</span>
         <input
           type="password"
@@ -103,7 +103,7 @@ export default function ChangePasswordForm() {
           autoComplete="new-password"
         />
       </label>
-      <label className="profile-password__field">
+      <label className="profile-password__field profile-form__field">
         <span>新しいパスワード（確認）</span>
         <input
           type="password"
@@ -115,12 +115,12 @@ export default function ChangePasswordForm() {
         />
       </label>
       {error && (
-        <p className="profile-password__error" role="alert">
+        <p className="profile-form__error" role="alert">
           {error}
         </p>
       )}
       {message && (
-        <p className="profile-password__message" role="status">
+        <p className="profile-form__message" role="status">
           {message}
         </p>
       )}
