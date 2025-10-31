@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition, type FormEvent } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { getBrowserSupabaseClient } from "@/lib/supabase/client";
+import { resolveRedirectPath, DEFAULT_REDIRECT_PATH, resolveSiteOrigin } from "@/lib/navigation";
 
 type FormState = {
   email: string;
@@ -14,6 +15,7 @@ type FormState = {
 export default function RegisterForm() {
   const supabase = getBrowserSupabaseClient();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [form, setForm] = useState<FormState>({ email: "", password: "" });
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -21,25 +23,40 @@ export default function RegisterForm() {
   const [resendError, setResendError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  const redirectPath = useMemo(
+    () => resolveRedirectPath(searchParams.get("redirectTo"), DEFAULT_REDIRECT_PATH),
+    [searchParams],
+  );
+
+  const buildCallbackUrl = () => {
+    const base = resolveSiteOrigin();
+    if (!base) {
+      throw new Error("サイトURLが特定できません。");
+    }
+    return `${base}/auth/callback?redirectTo=${encodeURIComponent(redirectPath)}`;
+  };
+
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
     setMessage(null);
     setResendStatus("idle");
     setResendError(null);
 
-    const siteUrl =
-      process.env.NEXT_PUBLIC_SITE_URL && process.env.NEXT_PUBLIC_SITE_URL.length > 0
-        ? process.env.NEXT_PUBLIC_SITE_URL
-        : window.location.origin;
-    const redirectUrl = `${siteUrl.replace(/\/$/, "")}/auth/login`;
-
     startTransition(async () => {
+      let redirectUrl: string;
+      try {
+        redirectUrl = buildCallbackUrl();
+      } catch {
+        setError("サイトのURLを解決できませんでした。時間をおいて再度お試しください。");
+        return;
+      }
+
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: form.email,
         password: form.password,
@@ -54,11 +71,11 @@ export default function RegisterForm() {
       }
 
       if (!data.session) {
-        setMessage("確認メールを送信しました。メール内のリンクから認証してください。");
+        setMessage("確認メールを送信しました。メール内のリンクから本登録を完了してください。");
         return;
       }
 
-      router.replace("/terms");
+      router.replace(redirectPath);
     });
   };
 
@@ -72,11 +89,14 @@ export default function RegisterForm() {
     setResendStatus("loading");
     setResendError(null);
 
-    const siteUrl =
-      process.env.NEXT_PUBLIC_SITE_URL && process.env.NEXT_PUBLIC_SITE_URL.length > 0
-        ? process.env.NEXT_PUBLIC_SITE_URL
-        : window.location.origin;
-    const redirectUrl = `${siteUrl.replace(/\/$/, "")}/auth/login`;
+    let redirectUrl: string;
+    try {
+      redirectUrl = buildCallbackUrl();
+    } catch {
+      setResendStatus("error");
+      setResendError("サイトのURLを解決できませんでした。時間をおいて再度お試しください。");
+      return;
+    }
 
     const { error: resendErr } = await supabase.auth.resend({
       type: "signup",

@@ -1,8 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type ReactNode,
+} from "react";
 
 import { getBrowserSupabaseClient } from "@/lib/supabase/client";
 
@@ -17,6 +25,7 @@ type VideoWatchProps = {
   width: number | null;
   height: number | null;
   tags: string[];
+  thumbnailUrl?: string | null;
   episodeNumber?: number;
   episodeCount?: number;
   seriesId?: string | null;
@@ -35,6 +44,33 @@ type ViewResponse = {
   viewCount: number;
 };
 
+function sanitizeObjectKey(rawName: string, fallback: string) {
+  const normalized = rawName.normalize("NFKC");
+  const dotIndex = normalized.lastIndexOf(".");
+  const base = dotIndex > 0 ? normalized.slice(0, dotIndex) : normalized;
+  const extension = dotIndex > 0 ? normalized.slice(dotIndex) : "";
+  const sanitizedBase = base
+    .replace(/\s+/g, "-")
+    .replace(/[^A-Za-z0-9_-]/g, "")
+    .replace(/-+/g, "-")
+    .replace(/^[-_]+/, "")
+    .replace(/[-_]+$/, "");
+  const safeBase = sanitizedBase.length > 0 ? sanitizedBase : fallback;
+  const safeExtension = extension.replace(/[^A-Za-z0-9.]/g, "").toLowerCase();
+  return `${safeBase}${safeExtension}`;
+}
+
+function parseTagsInput(value: string): string[] {
+  return value
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter((tag) => tag.length > 0);
+}
+
+function joinTags(tags: string[]): string {
+  return tags.join(", ");
+}
+
 export default function VideoWatch({
   videoId,
   src,
@@ -45,26 +81,42 @@ export default function VideoWatch({
   ownerId,
   width,
   height,
-  tags,
+  tags: initialTags,
+  thumbnailUrl,
   episodeNumber,
   episodeCount,
-  seriesId,
-  seriesSlug,
   firstEpisodeId,
 }: VideoWatchProps) {
   const supabase = getBrowserSupabaseClient();
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const editThumbnailInputRef = useRef<HTMLInputElement | null>(null);
+  const hideControlsTimerRef = useRef<number | null>(null);
+
   const [likeState, setLikeState] = useState<LikeState>("unknown");
   const [likeCount, setLikeCount] = useState(initialLikeCount);
   const [viewCount, setViewCount] = useState(initialViewCount);
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<ReactNode>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [isTogglingLike, setIsTogglingLike] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(false);
-  const hideControlsTimerRef = useRef<number | null>(null);
+
+  const [currentTitle, setCurrentTitle] = useState(title);
+  const [currentDescription, setCurrentDescription] = useState<string | null>(description ?? null);
+  const [currentTags, setCurrentTags] = useState<string[]>([...initialTags]);
+  const [currentThumbnailUrl, setCurrentThumbnailUrl] = useState<string | null>(thumbnailUrl ?? null);
+
+  const [editTitle, setEditTitle] = useState(title);
+  const [editDescription, setEditDescription] = useState(description ?? "");
+  const [editTags, setEditTags] = useState(joinTags(initialTags));
+  const [editThumbnailFile, setEditThumbnailFile] = useState<File | null>(null);
+  const [editThumbnailPreview, setEditThumbnailPreview] = useState<string | null>(null);
+  const [removeThumbnail, setRemoveThumbnail] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
   const clearHideTimer = useCallback(() => {
     if (hideControlsTimerRef.current !== null) {
@@ -144,7 +196,6 @@ export default function VideoWatch({
       const playPromise = element.play();
       if (playPromise && typeof playPromise.then === "function") {
         playPromise.catch(() => {
-          // 自動再生がブロックされた場合はメッセージを表示するだけに留める
           setMessage((prev) => prev ?? "自動再生がブロックされた場合は再生ボタンを押してください。");
         });
       }
@@ -212,9 +263,42 @@ export default function VideoWatch({
     };
   }, [hideControls, showControlsIndefinitely, showControlsTemporarily]);
 
+  useEffect(() => {
+    setCurrentTitle(title);
+  }, [title]);
+
+  useEffect(() => {
+    setCurrentDescription(description ?? null);
+  }, [description]);
+
+  useEffect(() => {
+    setCurrentTags([...initialTags]);
+  }, [initialTags]);
+
+  useEffect(() => {
+    setCurrentThumbnailUrl(thumbnailUrl ?? null);
+  }, [thumbnailUrl]);
+
+  useEffect(() => {
+    return () => {
+      if (editThumbnailPreview) {
+        URL.revokeObjectURL(editThumbnailPreview);
+      }
+    };
+  }, [editThumbnailPreview]);
+
   const handleToggleLike = useCallback(async () => {
     if (!accessToken) {
-      setMessage("いいねするにはログインが必要です。");
+      setMessage(
+        <span>
+          いいねするには
+          {" "}
+          <Link href="/auth/login" style={{ textDecoration: "underline" }}>
+            ログイン
+          </Link>
+          {" "}が必要です。
+        </span>,
+      );
       return;
     }
 
@@ -229,7 +313,6 @@ export default function VideoWatch({
 
     setIsTogglingLike(true);
     try {
-      // レスポンスを待つ間も操作感を損ねないように楽観的に更新する
       setLikeState(nextState);
       setLikeCount((prev) => Math.max(0, prev + delta));
       setMessage(null);
@@ -285,7 +368,195 @@ export default function VideoWatch({
     }
   }, [hideControls, videoId]);
 
+  const resetThumbnailSelection = useCallback(() => {
+    setEditThumbnailFile(null);
+    setEditThumbnailPreview((previous) => {
+      if (previous) {
+        URL.revokeObjectURL(previous);
+      }
+      return null;
+    });
+    if (editThumbnailInputRef.current) {
+      editThumbnailInputRef.current.value = "";
+    }
+  }, []);
+
+  const openEditor = useCallback(() => {
+    resetThumbnailSelection();
+    setEditTitle(currentTitle);
+    setEditDescription(currentDescription ?? "");
+    setEditTags(joinTags(currentTags));
+    setRemoveThumbnail(false);
+    setEditError(null);
+    setIsEditorOpen(true);
+  }, [currentDescription, currentTags, currentTitle, resetThumbnailSelection]);
+
+  const closeEditor = useCallback(() => {
+    setIsEditorOpen(false);
+    resetThumbnailSelection();
+    setRemoveThumbnail(false);
+    setEditError(null);
+  }, [resetThumbnailSelection]);
+
+  const handleThumbnailFileChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    const nextFile = event.target.files?.[0] ?? null;
+    setEditThumbnailFile(nextFile);
+    setEditThumbnailPreview((previous) => {
+      if (previous) {
+        URL.revokeObjectURL(previous);
+      }
+      return nextFile ? URL.createObjectURL(nextFile) : null;
+    });
+    if (!nextFile && event.target.value) {
+      event.target.value = "";
+    }
+    setRemoveThumbnail(false);
+  }, []);
+
+  const handleClearThumbnailSelection = useCallback(() => {
+    resetThumbnailSelection();
+    setRemoveThumbnail(false);
+  }, [resetThumbnailSelection]);
+
+  const handleToggleRemoveThumbnail = useCallback(() => {
+    setRemoveThumbnail((previous) => {
+      const next = !previous;
+      if (next) {
+        resetThumbnailSelection();
+      }
+      return next;
+    });
+  }, [resetThumbnailSelection]);
+
+  const handleSaveEdits = useCallback(async () => {
+    const trimmedTitle = editTitle.trim();
+    if (!trimmedTitle) {
+      setEditError("タイトルを入力してください。");
+      return;
+    }
+
+    let activeAccessToken = accessToken;
+    if (!activeAccessToken) {
+      const { data, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) {
+        setEditError("ログイン状態の確認に失敗しました。時間をおいて再試行してください。");
+        return;
+      }
+      activeAccessToken = data.session?.access_token ?? null;
+      if (!activeAccessToken) {
+        setEditError("動画を編集するにはログインが必要です。");
+        return;
+      }
+      setAccessToken(activeAccessToken);
+    }
+
+    setIsSaving(true);
+    setEditError(null);
+
+    const storage = supabase.storage.from("video");
+    let uploadedThumbnailPath: string | null = null;
+    let uploadedThumbnailUrl: string | null = null;
+
+    const preparedTags = parseTagsInput(editTags);
+    const tagsAsString = preparedTags.length > 0 ? joinTags(preparedTags) : "";
+    const trimmedDescription = editDescription.trim();
+
+    try {
+      if (editThumbnailFile) {
+        const uploadId = crypto.randomUUID();
+        const sanitized = sanitizeObjectKey(editThumbnailFile.name, "thumbnail");
+        const targetPath = `${ownerId}/thumbnails/${uploadId}-${sanitized}`;
+        const { error: uploadError } = await storage.upload(targetPath, editThumbnailFile, {
+          cacheControl: "3600",
+          upsert: false,
+        });
+
+        if (uploadError) {
+          throw new Error(uploadError.message ?? "サムネイルのアップロードに失敗しました。");
+        }
+
+        uploadedThumbnailPath = targetPath;
+        const {
+          data: { publicUrl },
+        } = storage.getPublicUrl(targetPath);
+        uploadedThumbnailUrl = publicUrl;
+      }
+
+      const payload: Record<string, unknown> = {
+        title: trimmedTitle,
+        description: trimmedDescription,
+        tags: tagsAsString,
+      };
+
+      if (uploadedThumbnailUrl) {
+        payload.thumbnailUrl = uploadedThumbnailUrl;
+      } else if (removeThumbnail) {
+        payload.removeThumbnail = true;
+      }
+
+      const response = await fetch(`/api/videos/${videoId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${activeAccessToken}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const payloadBody = (await response.json().catch(() => null)) as
+        | {
+            message?: string;
+            video?: {
+              title: string;
+              description: string | null;
+              tags: string | null;
+              thumbnail_url: string | null;
+            };
+          }
+        | null;
+
+      if (!response.ok) {
+        const messageText = payloadBody?.message ?? "動画情報の更新に失敗しました。";
+        throw new Error(messageText);
+      }
+
+      const updated = payloadBody?.video;
+      if (!updated) {
+        throw new Error("更新後の動画情報を取得できませんでした。");
+      }
+
+      const nextTags = parseTagsInput(updated.tags ?? "");
+      setCurrentTitle(updated.title);
+      setCurrentDescription(updated.description ?? null);
+      setCurrentTags(nextTags);
+      setCurrentThumbnailUrl(updated.thumbnail_url ?? null);
+      setMessage("動画情報を更新しました。");
+      closeEditor();
+    } catch (unknownError) {
+      if (uploadedThumbnailPath) {
+        await storage.remove([uploadedThumbnailPath]).catch(() => undefined);
+      }
+      const fallbackMessage =
+        unknownError instanceof Error ? unknownError.message : "動画情報の更新に失敗しました。";
+      setEditError(fallbackMessage);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [
+    accessToken,
+    closeEditor,
+    editDescription,
+    editTags,
+    editThumbnailFile,
+    editTitle,
+    ownerId,
+    removeThumbnail,
+    supabase,
+    videoId,
+  ]);
+
   const likeLabel = useMemo(() => (likeState === "liked" ? "いいね済み" : "いいね"), [likeState]);
+  const saveLabel = isSaving ? "保存中..." : "変更を保存";
   const deleteLabel = isDeleting ? "削除中..." : "動画を削除";
   const videoStyle = useMemo(() => {
     if (width && height && width > 0 && height > 0) {
@@ -364,11 +635,11 @@ export default function VideoWatch({
           {firstEpisodeId ? (
             <h1 className="video-watch__title">
               <Link href={`/videos/${firstEpisodeId}`} className="video-watch__title-link">
-                {title}
+                {currentTitle}
               </Link>
             </h1>
           ) : (
-            <h1 className="video-watch__title">{title}</h1>
+            <h1 className="video-watch__title">{currentTitle}</h1>
           )}
           <p className="video-watch__stats">
             <span>{viewCount.toLocaleString()} 再生</span>
@@ -390,26 +661,122 @@ export default function VideoWatch({
             </a>
           </div>
           {isOwner && (
-            <button
-              type="button"
-              className="video-watch__delete button button--ghost"
-              onClick={handleDelete}
-              disabled={isDeleting}
-            >
-              {deleteLabel}
+            <button type="button" className="video-watch__edit button button--ghost" onClick={openEditor}>
+              動画を編集
             </button>
           )}
         </div>
-        {description && <p className="video-watch__description">{description}</p>}
-        {tags.length > 0 && (
+        {currentDescription && <p className="video-watch__description">{currentDescription}</p>}
+        {currentTags.length > 0 && (
           <ul className="video-watch__tags">
-            {tags.map((tag) => (
+            {currentTags.map((tag) => (
               <li key={tag}>#{tag}</li>
             ))}
           </ul>
         )}
         {message && <p className="video-watch__message">{message}</p>}
       </div>
+      {isOwner && isEditorOpen && (
+        <div className="video-watch__editor-overlay" role="dialog" aria-modal="true">
+          <div className="video-watch__editor">
+            <h2 className="video-watch__editor-title">動画を編集</h2>
+            {editError && <p className="video-watch__editor-error">{editError}</p>}
+            <div className="video-watch__editor-field">
+              <label className="video-watch__editor-label" htmlFor="video-edit-title">
+                タイトル
+              </label>
+              <input
+                id="video-edit-title"
+                type="text"
+                value={editTitle}
+                onChange={(event) => setEditTitle(event.target.value)}
+              />
+            </div>
+            <div className="video-watch__editor-field">
+              <label className="video-watch__editor-label" htmlFor="video-edit-description">
+                説明
+              </label>
+              <textarea
+                id="video-edit-description"
+                value={editDescription}
+                onChange={(event) => setEditDescription(event.target.value)}
+                rows={4}
+              />
+            </div>
+            <div className="video-watch__editor-field">
+              <label className="video-watch__editor-label" htmlFor="video-edit-tags">
+                タグ（カンマ区切り）
+              </label>
+              <input
+                id="video-edit-tags"
+                type="text"
+                value={editTags}
+                onChange={(event) => setEditTags(event.target.value)}
+                placeholder="例: 温泉, 癒やし"
+              />
+            </div>
+            <div className="video-watch__editor-field">
+              <span className="video-watch__editor-label">サムネイル</span>
+              <div className="video-watch__editor-thumbnail">
+                {editThumbnailPreview ? (
+                  <img src={editThumbnailPreview} alt="" />
+                ) : currentThumbnailUrl && !removeThumbnail ? (
+                  <img src={currentThumbnailUrl} alt="" />
+                ) : (
+                  <div className="video-watch__editor-thumbnail-placeholder">サムネイル未設定</div>
+                )}
+              </div>
+              <div className="video-watch__editor-thumbnail-actions">
+                <label className="button button--ghost video-watch__editor-file-button">
+                  ファイルを選択
+                  <input
+                    ref={editThumbnailInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/gif"
+                    onChange={handleThumbnailFileChange}
+                  />
+                </label>
+                {editThumbnailFile && (
+                  <button type="button" className="button button--ghost" onClick={handleClearThumbnailSelection}>
+                    選択をクリア
+                  </button>
+                )}
+                {currentThumbnailUrl && (
+                  <label className="video-watch__editor-remove">
+                    <input
+                      type="checkbox"
+                      checked={removeThumbnail}
+                      onChange={handleToggleRemoveThumbnail}
+                      disabled={!!editThumbnailFile}
+                    />
+                    <span>現在のサムネイルを削除する</span>
+                  </label>
+                )}
+              </div>
+            </div>
+            <div className="video-watch__editor-actions">
+              <button type="button" className="button" onClick={handleSaveEdits} disabled={isSaving}>
+                {saveLabel}
+              </button>
+              <button type="button" className="button button--ghost" onClick={closeEditor} disabled={isSaving}>
+                キャンセル
+              </button>
+            </div>
+            <div className="video-watch__editor-divider" role="separator" />
+            <div className="video-watch__editor-danger">
+              <p className="video-watch__editor-danger-text">動画を削除する場合はこちら</p>
+              <button
+                type="button"
+                className="video-watch__delete button button--ghost"
+                onClick={handleDelete}
+                disabled={isDeleting}
+              >
+                {deleteLabel}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

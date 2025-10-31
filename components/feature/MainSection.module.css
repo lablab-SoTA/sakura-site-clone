@@ -57,8 +57,8 @@
 .card {
   position: relative;
   display: grid;
-  gap: 12px;
-  padding: 14px;
+  gap: 10px;
+  padding: 12px;
   border-radius: 12px;
   border: 1px solid rgba(28, 31, 44, 0.12);
   background: rgba(255, 255, 255, 0.85);
@@ -98,26 +98,26 @@
 
 .cardBody {
   display: grid;
-  gap: 6px;
+  gap: 4px;
 }
 
 .series {
   margin: 0;
-  font-size: clamp(0.86rem, 3.6vw, 0.94rem);
+  font-size: clamp(0.76rem, 3.2vw, 0.88rem);
   font-weight: 700;
   font-family: var(--font-brand, inherit);
 }
 
 .episodeTitle {
   margin: 0;
-  font-size: clamp(0.82rem, 3.1vw, 0.88rem);
+  font-size: clamp(0.72rem, 2.8vw, 0.82rem);
   font-weight: 600;
   font-family: var(--font-brand, inherit);
 }
 
 .plays {
   margin: 0;
-  font-size: clamp(0.72rem, 2.9vw, 0.78rem);
+  font-size: clamp(0.64rem, 2.6vw, 0.72rem);
   color: var(--muted);
   font-family: var(--font-body, inherit);
 }
@@ -127,7 +127,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: clamp(0.72rem, 2.9vw, 0.78rem);
+  font-size: clamp(0.64rem, 2.6vw, 0.72rem);
   color: var(--muted);
   font-family: var(--font-body, inherit);
 }

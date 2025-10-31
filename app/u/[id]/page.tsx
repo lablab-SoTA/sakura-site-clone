@@ -174,6 +174,8 @@ export default async function UserProfilePage({
   const publishedVideos = mergeAndSortVideos(legacyPublished, hierarchyPublished);
 
   const videoCount = publishedVideos.length;
+  const totalViews = publishedVideos.reduce((acc, video) => acc + video.view_count, 0);
+  const totalLikes = publishedVideos.reduce((acc, video) => acc + video.like_count, 0);
   const latestPublishedAt = publishedVideos[0]
     ? new Intl.DateTimeFormat("ja-JP", { dateStyle: "medium" }).format(
         new Date(publishedVideos[0].created_at),
@@ -212,6 +214,14 @@ export default async function UserProfilePage({
             <li className="creator-page__metric">
               <span className="creator-page__metric-value">{videoCount.toLocaleString()}</span>
               <span className="creator-page__metric-label">公開作品</span>
+            </li>
+            <li className="creator-page__metric">
+              <span className="creator-page__metric-value">{totalViews.toLocaleString()}</span>
+              <span className="creator-page__metric-label">総再生数</span>
+            </li>
+            <li className="creator-page__metric">
+              <span className="creator-page__metric-value">{totalLikes.toLocaleString()}</span>
+              <span className="creator-page__metric-label">総いいね</span>
             </li>
           </ul>
           {socialLinks.length > 0 && (

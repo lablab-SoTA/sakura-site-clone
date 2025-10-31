@@ -9,6 +9,7 @@ import "react-easy-crop/react-easy-crop.css";
 
 import { getBrowserSupabaseClient } from "@/lib/supabase/client";
 import { cropImageToFile } from "@/lib/image/crop-image";
+import ChangePasswordForm from "./change-password-form";
 
 type ProfileState = {
   avatar_url: string;
@@ -445,6 +446,11 @@ export default function ProfileForm({ onSaved }: ProfileFormProps) {
           onChange={(event) => handleChange("sns_youtube", event.target.value)}
         />
       </label>
+      <section className="profile-form__section" aria-label="パスワード設定">
+        <h2 className="profile-form__section-title">パスワード設定</h2>
+        <p className="profile-form__section-note">現在のパスワードを確認のうえ、新しいパスワードに変更できます。</p>
+        <ChangePasswordForm />
+      </section>
       {error && (
         <p className="profile-form__error" role="alert">
           {error}
