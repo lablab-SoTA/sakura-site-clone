@@ -464,6 +464,59 @@ a {
   padding-top: clamp(8px, 3vw, 20px);
 }
 
+.layout__back-button {
+  width: min(1080px, 100%);
+  margin-inline: auto;
+  padding-inline: clamp(16px, 6vw, 72px);
+  display: flex;
+  justify-content: flex-start;
+}
+
+/* 動画ページでは動画と同じパディングに揃える */
+.layout__main:has(> .video-page) > .layout__back-button {
+  padding-inline: clamp(16px, 6vw, 64px);
+}
+
+.back-button {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  border-radius: 9999px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--fg);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition:
+    background var(--dur-normal) var(--ease-standard),
+    border-color var(--dur-normal) var(--ease-standard),
+    box-shadow var(--dur-normal) var(--ease-standard),
+    transform var(--dur-fast) var(--ease-standard);
+}
+
+.back-button:hover {
+  background: #fff;
+  border-color: rgba(28, 31, 44, 0.2);
+  box-shadow: 0 10px 24px rgba(31, 34, 46, 0.14);
+  transform: translateY(-1px);
+}
+
+.back-button:active {
+  transform: translateY(0);
+  box-shadow: 0 6px 16px rgba(31, 34, 46, 0.12);
+}
+
+.back-button:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px #fff,
+    0 0 0 5px rgba(255, 120, 183, 0.5);
+}
+
 .layout__footer {
   margin-top: auto;
   font-size: 0.85rem;

@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import AgeGateQueryReset from "@/components/AgeGateQueryReset";
 import Header from "@/components/Header";
 import FooterNav from "@/components/FooterNav";
+import BackButton from "@/components/BackButton";
 
 import "./globals.css";
 
@@ -56,7 +57,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </Suspense>
         <div className="layout">
           <Header primaryNav={primaryNav} />
-          <main className="layout__main">{children}</main>
+          <main className="layout__main">
+            <div className="layout__back-button">
+              <BackButton />
+            </div>
+            {children}
+          </main>
           <footer className="layout__footer">
             <p>© {new Date().getFullYear()} xanime Studio. All rights reserved.</p>
           </footer>
