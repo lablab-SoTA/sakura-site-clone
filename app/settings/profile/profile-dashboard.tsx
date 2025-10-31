@@ -444,20 +444,25 @@ export default function ProfileDashboard() {
     return trimmed.length > 0 ? trimmed : "匿名クリエイター";
   }, [profile]);
 
-  const snsLinks = useMemo(() => {
+  const socialLinks = useMemo(() => {
     if (!profile) {
       return [];
     }
-    const links: Array<{ key: "x" | "instagram" | "youtube"; href: string }> = [];
-    if (profile.sns_x) {
-      links.push({ key: "x", href: profile.sns_x });
+
+    const links: Array<{ key: "x" | "instagram" | "youtube"; href: string; label: string }> = [];
+
+    if (profile.sns_x?.trim()) {
+      links.push({ key: "x", href: profile.sns_x.trim(), label: "X (Twitter)" });
     }
-    if (profile.sns_instagram) {
-      links.push({ key: "instagram", href: profile.sns_instagram });
+
+    if (profile.sns_instagram?.trim()) {
+      links.push({ key: "instagram", href: profile.sns_instagram.trim(), label: "Instagram" });
     }
-    if (profile.sns_youtube) {
-      links.push({ key: "youtube", href: profile.sns_youtube });
+
+    if (profile.sns_youtube?.trim()) {
+      links.push({ key: "youtube", href: profile.sns_youtube.trim(), label: "YouTube" });
     }
+
     return links;
   }, [profile]);
 
@@ -480,6 +485,21 @@ export default function ProfileDashboard() {
       return total + (video.view_count ?? 0);
     }, 0);
   }, [publishedVideos]);
+
+  const latestPublishedAt = useMemo(() => {
+    const latest = publishedVideos[0];
+    if (!latest?.created_at) {
+      return null;
+    }
+    const date = new Date(latest.created_at);
+    if (Number.isNaN(date.getTime())) {
+      return null;
+    }
+    return new Intl.DateTimeFormat("ja-JP", { dateStyle: "medium" }).format(date);
+  }, [publishedVideos]);
+
+  const bioText = (profile?.bio ?? "").trim();
+  const hasBio = bioText.length > 0;
 
   const feedItems = useMemo<FeedViewerItem[]>(() => {
     return publishedVideos
@@ -581,65 +601,69 @@ export default function ProfileDashboard() {
 
   return (
     <div className="profile-dashboard">
-      <section className="profile-dashboard__header">
-        <div className="profile-dashboard__header-content">
-          <div className="profile-dashboard__meta">
-            <div className="profile-dashboard__header-row">
-              <button
-                type="button"
-                className="profile-dashboard__avatar"
-                onClick={handleOpenEditor}
-                aria-label="プロフィールを編集"
-              >
-                {profile?.avatar_url ? (
-                  <Image src={profile.avatar_url} alt="プロフィール画像" fill sizes="96px" />
-                ) : (
-                  <span>{displayName.trim().charAt(0).toUpperCase() || "?"}</span>
-                )}
-              </button>
-              <div className="profile-dashboard__identity">
-                <h1 className="profile-dashboard__name">{displayName}</h1>
-              </div>
-              <div className="profile-dashboard__stats-row">
-                <p className="profile-dashboard__stat-line">
-                  {formattedJoinedAt && <span>登録日 {formattedJoinedAt}</span>}
-                  <span>総再生数 {totalViewCount.toLocaleString()}</span>
-                  <span>いいね {totalLikeCount.toLocaleString()}</span>
-                </p>
-                {snsLinks.length > 0 && (
-                  <ul className="profile-dashboard__sns" aria-label="SNSリンク">
-                    {snsLinks.map((item) => (
-                      <li key={item.key}>
-                        <Link href={item.href} target="_blank" rel="noreferrer" aria-label={getSnsLabel(item.key)}>
-                          {snsIcons[item.key]}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </div>
-            {profile?.bio ? (
-              <p className="profile-dashboard__bio">{profile.bio}</p>
+      <header className="creator-page__hero">
+        <div className="creator-page__hero-visual">
+          <button
+            type="button"
+            className="creator-page__avatar profile-dashboard__avatar-button"
+            onClick={handleOpenEditor}
+            aria-label="プロフィールを編集"
+          >
+            {profile?.avatar_url ? (
+              <Image src={profile.avatar_url} alt="プロフィール画像" fill sizes="140px" />
             ) : (
-              <p className="profile-dashboard__bio profile-dashboard__bio--muted">自己紹介はまだ設定されていません。</p>
+              <span>{displayName.trim().charAt(0).toUpperCase() || "?"}</span>
             )}
-            <div className="profile-dashboard__actions">
-              <button type="button" className="button profile-dashboard__edit-button" onClick={handleOpenEditor}>
-                プロフィールを変更
-              </button>
-              <button
-                type="button"
-                className="profile-dashboard__video-button"
-                onClick={handleOpenVideoManager}
-              >
-                動画を編集
-              </button>
-            </div>
+          </button>
+        </div>
+        <div className="creator-page__hero-body">
+          <span className="creator-page__kicker">CREATOR</span>
+          <h1 className="creator-page__title">{displayName}</h1>
+          {latestPublishedAt ? (
+            <p className="creator-page__update">最終更新 {latestPublishedAt}</p>
+          ) : formattedJoinedAt ? (
+            <p className="creator-page__update">登録日 {formattedJoinedAt}</p>
+          ) : null}
+          <p className={`creator-page__bio${hasBio ? "" : " creator-page__bio--empty"}`}>
+            {hasBio ? bioText : "自己紹介はまだ設定されていません。"}
+          </p>
+          <ul className="creator-page__metrics" aria-label="クリエイターの公開状況">
+            <li className="creator-page__metric">
+              <span className="creator-page__metric-value">{publishedVideos.length.toLocaleString()}</span>
+              <span className="creator-page__metric-label">公開作品</span>
+            </li>
+            <li className="creator-page__metric">
+              <span className="creator-page__metric-value">{totalViewCount.toLocaleString()}</span>
+              <span className="creator-page__metric-label">総再生数</span>
+            </li>
+            <li className="creator-page__metric">
+              <span className="creator-page__metric-value">{totalLikeCount.toLocaleString()}</span>
+              <span className="creator-page__metric-label">総いいね</span>
+            </li>
+          </ul>
+          {socialLinks.length > 0 && (
+            <ul className="creator-page__links" aria-label="クリエイターのSNSリンク">
+              {socialLinks.map((item) => (
+                <li key={item.href}>
+                  <Link href={item.href} target="_blank" rel="noreferrer" aria-label={getSnsLabel(item.key)}>
+                    {snsIcons[item.key]}
+                    <span>{item.label}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="profile-dashboard__actions">
+            <button type="button" className="button profile-dashboard__edit-button" onClick={handleOpenEditor}>
+              プロフィールを変更
+            </button>
+            <button type="button" className="profile-dashboard__video-button" onClick={handleOpenVideoManager}>
+              動画を編集
+            </button>
           </div>
         </div>
-        {error && <p className="profile-dashboard__error">{error}</p>}
-      </section>
+      </header>
+      {error && <p className="profile-dashboard__error">{error}</p>}
 
       <section className="profile-dashboard__collections">
         <div className="profile-dashboard__tabs" role="tablist" aria-label="動画一覧切り替え">

@@ -117,6 +117,7 @@ a {
   padding-block-start: calc(var(--safe-top) + clamp(44px, 12vw, 96px));
   padding-block-end: max(120px, var(--safe-bottom) + 52px);
   padding-inline: max(var(--site-gutter), var(--safe-left)) max(var(--site-gutter), var(--safe-right));
+  background-color: #ffffff;
 }
 
 .layout__header {
@@ -298,7 +299,7 @@ a {
 .layout__footer-nav {
   position: fixed;
   inset-inline: 0;
-  inset-block-end: max(8px, var(--safe-bottom) + 8px);
+  inset-block-end: var(--safe-bottom, 0px);
   display: flex;
   justify-content: center;
   pointer-events: none;
@@ -310,9 +311,9 @@ a {
   display: grid;
   grid-auto-flow: column;
   align-items: center;
-  gap: clamp(10px, 3.6vw, 34px);
+  gap: clamp(6px, 3vw, 34px);
   padding: clamp(8px, 2.4vw, 14px);
-  padding-inline: clamp(18px, 5vw, 42px);
+  padding-inline: clamp(12px, 4.6vw, 42px);
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.8);
   background: rgba(255, 255, 255, 0.88);
@@ -333,6 +334,14 @@ a {
   box-shadow:
     0 -10px 40px rgba(31, 34, 46, 0.14),
     inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  border-radius: clamp(20px, 6vw, 36px) clamp(20px, 6vw, 36px) 0 0;
+  overflow: hidden;
+  width: calc(100vw - var(--safe-left, 0px) - var(--safe-right, 0px));
+  max-width: none;
+  margin: 0;
+  margin-inline: auto;
+  grid-auto-columns: 1fr;
+  justify-items: center;
 }
 
 .touch-nav--pressing {
@@ -397,8 +406,8 @@ a {
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  min-width: clamp(64px, 22vw, 120px);
-  padding: clamp(4px, 1.8vw, 8px) clamp(10px, 3.6vw, 16px);
+  min-width: clamp(52px, 18vw, 112px);
+  padding: clamp(4px, 1.6vw, 8px) clamp(8px, 3.2vw, 16px);
   border: none;
   background: transparent;
   color: var(--muted);
@@ -454,6 +463,72 @@ a {
 
 .touch-nav__label {
   white-space: nowrap;
+}
+
+@media (max-width: 360px) {
+  .touch-nav {
+    gap: 6px;
+    padding-inline: 12px;
+  }
+
+  .touch-nav__btn {
+    min-width: 50px;
+    font-size: 0.74rem;
+  }
+
+  .touch-nav__icon {
+    width: 22px;
+    height: 22px;
+  }
+
+  .touch-nav__svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .layout:has(.feed-page--viewer) .layout__footer-nav {
+    padding-inline: 0;
+  }
+
+  .layout:has(.feed-page--viewer) .touch-nav--footer {
+    width: calc(100vw - var(--safe-left, 0px) - var(--safe-right, 0px));
+    max-width: none;
+    border-radius: 0;
+    border: none;
+    background: rgba(10, 13, 22, 0.85);
+    color: rgba(255, 255, 255, 0.82);
+    box-shadow: 0 -12px 36px rgba(5, 6, 10, 0.45);
+    backdrop-filter: blur(18px);
+    gap: clamp(18px, 12vw, 36px);
+    padding: clamp(16px, 5vw, 22px) clamp(20px, 8vw, 32px);
+    grid-auto-columns: 1fr;
+    justify-items: center;
+    margin-inline: auto;
+  }
+
+  .layout:has(.feed-page--viewer) .touch-nav__glass,
+  .layout:has(.feed-page--viewer) .touch-nav__highlight {
+    display: none;
+  }
+
+  .layout:has(.feed-page--viewer) .touch-nav--footer .touch-nav__btn {
+    min-width: auto;
+    color: rgba(255, 255, 255, 0.64);
+    font-weight: 500;
+    gap: 6px;
+  }
+
+  .layout:has(.feed-page--viewer) .touch-nav--footer .touch-nav__btn--active {
+    color: #fff;
+  }
+
+  .layout:has(.feed-page--viewer) .touch-nav--footer .touch-nav__icon,
+  .layout:has(.feed-page--viewer) .touch-nav--footer .touch-nav__svg {
+    color: currentColor;
+    filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.32));
+  }
 }
 
 .layout__main {
@@ -655,6 +730,7 @@ a {
 .home-screen {
   display: grid;
   gap: clamp(24px, 7vw, 42px);
+  background-color: #ffffff;
 }
 
 .feed-page {
@@ -664,6 +740,11 @@ a {
 
 .feed-page--viewer {
   position: relative;
+  margin-block-start: calc(-1 * var(--feed-top-offset, 0px));
+}
+
+.layout:has(.feed-page--viewer) {
+  padding-block-end: var(--feed-footer-offset, max(72px, var(--safe-bottom) + 32px));
 }
 
 @media (max-width: 768px) {
@@ -672,12 +753,16 @@ a {
     padding-top: 0;
   }
 
-  .feed-page--viewer {
-    margin-block-start: calc(-1 * (var(--safe-top) + clamp(44px, 12vw, 96px)));
+  .layout:has(.feed-page--viewer) {
+    padding-block-start: max(var(--safe-top), 0px);
+    padding-block-end: var(
+      --feed-footer-offset-mobile,
+      var(--feed-footer-offset, max(96px, var(--safe-bottom) + 44px))
+    );
   }
 
-  .layout:has(.feed-page--viewer) {
-    padding-block-start: max(calc(var(--safe-top) + clamp(44px, 12vw, 96px) - 12px), 0px);
+  .layout:has(.feed-page--viewer) .feed-page--viewer {
+    margin-block-start: calc(-1 * var(--feed-top-offset-mobile, var(--feed-top-offset, 0px)));
   }
 }
 
@@ -1748,6 +1833,9 @@ a {
   display: grid;
   gap: clamp(24px, 6vw, 40px);
   align-items: start;
+  width: min(1080px, 100%);
+  margin-inline: auto;
+  padding-inline: clamp(16px, 6vw, 72px);
 }
 
 .episode-watch__main {
@@ -3248,6 +3336,20 @@ a {
   position: relative;
   border: 4px solid rgba(255, 255, 255, 0.65);
   box-shadow: 0 20px 40px rgba(31, 34, 46, 0.2);
+}
+
+.profile-dashboard__avatar-button {
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.profile-dashboard__avatar-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
 }
 
 .creator-page__avatar::after {

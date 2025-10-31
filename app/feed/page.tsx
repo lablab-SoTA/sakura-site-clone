@@ -71,7 +71,13 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
 
   const pageClassName = items.length > 0 ? "feed-page feed-page--viewer" : "feed-page";
   const pageStyle = items.length > 0
-    ? ({ "--feed-footer-offset": "calc(max(96px, var(--safe-bottom) + 36px))" } as CSSProperties)
+    ? ({
+        "--feed-top-offset": "clamp(44px, 12vw, 96px)",
+        "--feed-top-offset-mobile": "max(var(--safe-top), 0px)",
+        "--feed-footer-offset": "calc(max(108px, var(--safe-bottom) + 52px))",
+        "--feed-footer-offset-mobile": "calc(max(126px, var(--safe-bottom) + 68px))",
+        "--feed-footer-radius": "36px",
+      } as CSSProperties)
     : undefined;
 
   if (items.length === 0) {

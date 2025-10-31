@@ -2,10 +2,11 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import Hls from "hls.js";
 
 import { formatNumberJP } from "@/lib/intl";
+import { getBrowserSupabaseClient } from "@/lib/supabase/client";
 
 import type { FeedViewerItem } from "./FeedViewer";
 import styles from "./FeedVerticalViewer.module.css";
@@ -57,11 +58,31 @@ type FeedVideoProps = {
   isMuted: boolean;
   onToggleMute: () => void;
   onEnded: () => void;
+  accessToken: string | null;
+  isAuthenticated: boolean;
+  initialLiked: boolean;
+  onLikeStateChange: (videoId: string, liked: boolean, nextCount: number) => void;
 };
 
-function FeedVideo({ item, isActive, isMuted, onToggleMute, onEnded }: FeedVideoProps) {
+function FeedVideo({
+  item,
+  isActive,
+  isMuted,
+  onToggleMute,
+  onEnded,
+  accessToken,
+  isAuthenticated,
+  initialLiked,
+  onLikeStateChange,
+}: FeedVideoProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
+  const userPausedRef = useRef(false);
+  const [isPaused, setIsPaused] = useState(true);
+  const [isLiked, setIsLiked] = useState(initialLiked);
+  const [likeCount, setLikeCount] = useState<number>(() => item.likes);
+  const [isMutatingLike, setIsMutatingLike] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -102,6 +123,16 @@ function FeedVideo({ item, isActive, isMuted, onToggleMute, onEnded }: FeedVideo
   }, [item.src]);
 
   useEffect(() => {
+    setIsLiked(false);
+    setLikeCount(item.likes);
+    userPausedRef.current = false;
+  }, [item]);
+
+  useEffect(() => {
+    setIsLiked(initialLiked);
+  }, [initialLiked]);
+
+  useEffect(() => {
     const video = videoRef.current;
     if (!video) {
       return;
@@ -114,22 +145,53 @@ function FeedVideo({ item, isActive, isMuted, onToggleMute, onEnded }: FeedVideo
     if (!video) {
       return;
     }
+
+    const handlePlayEvent = () => {
+      setIsPaused(false);
+    };
+    const handlePauseEvent = () => {
+      setIsPaused(true);
+    };
+
+    handlePauseEvent();
+
+    video.addEventListener("play", handlePlayEvent);
+    video.addEventListener("pause", handlePauseEvent);
+
+    return () => {
+      video.removeEventListener("play", handlePlayEvent);
+      video.removeEventListener("pause", handlePauseEvent);
+    };
+  }, []);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) {
+      return;
+    }
     if (isActive) {
+      if (userPausedRef.current) {
+        return;
+      }
       const play = async () => {
         try {
           await video.play();
         } catch {
           // 自動再生がブロックされる可能性があるため、例外は無視します。
+          setIsPaused(true);
+          userPausedRef.current = true;
         }
       };
       play();
     } else {
+      userPausedRef.current = false;
       video.pause();
       try {
         video.currentTime = 0;
       } catch {
         // ロード前の場合は currentTime にアクセスできないことがあるため無視します。
       }
+      setIsPaused(true);
     }
   }, [isActive]);
 
@@ -147,8 +209,96 @@ function FeedVideo({ item, isActive, isMuted, onToggleMute, onEnded }: FeedVideo
     };
   }, [onEnded]);
 
+  const handleTogglePlayback = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) {
+      return;
+    }
+    if (video.paused) {
+      userPausedRef.current = false;
+      void video.play().catch(() => {
+        setIsPaused(true);
+        userPausedRef.current = true;
+      });
+    } else {
+      userPausedRef.current = true;
+      video.pause();
+    }
+  }, []);
+
+  const handleContainerClick = useCallback(
+    (event: MouseEvent<HTMLDivElement>) => {
+      const target = event.target as HTMLElement;
+      if (target.closest("button")) {
+        return;
+      }
+      handleTogglePlayback();
+    },
+    [handleTogglePlayback],
+  );
+
+  const persistLikeState = useCallback(async () => {
+    const response = await fetch(`/api/videos/${item.id}/like`, {
+      method: "POST",
+      headers: accessToken
+        ? {
+            Authorization: `Bearer ${accessToken}`,
+          }
+        : undefined,
+    });
+
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as { message?: string } | null;
+      throw new Error(payload?.message ?? "いいねの更新に失敗しました。");
+    }
+
+    const payload = (await response.json()) as { liked: boolean; likeCount: number };
+    setIsLiked(payload.liked);
+    setLikeCount(payload.likeCount);
+    onLikeStateChange(item.id, payload.liked, payload.likeCount);
+    return payload;
+  }, [accessToken, item.id, onLikeStateChange]);
+
+  const handleToggleLike = useCallback(async () => {
+    if (!isAuthenticated || !accessToken) {
+      setFeedback("いいねするにはログインが必要です。");
+      return;
+    }
+    if (isMutatingLike) {
+      return;
+    }
+
+    setFeedback(null);
+    setIsMutatingLike(true);
+    const previousLiked = isLiked;
+    const previousCount = likeCount;
+
+    try {
+      // 楽観的更新
+      const optimisticLiked = !previousLiked;
+      setIsLiked(optimisticLiked);
+      setLikeCount((current) => Math.max(0, current + (optimisticLiked ? 1 : -1)));
+      const { liked, likeCount: nextCount } = await persistLikeState();
+      setIsLiked(liked);
+      setLikeCount(nextCount);
+    } catch (unknownError) {
+      setIsLiked(previousLiked);
+      setLikeCount(previousCount);
+      const fallback =
+        unknownError instanceof Error ? unknownError.message : "いいねの更新に失敗しました。";
+      setFeedback(fallback);
+    } finally {
+      setIsMutatingLike(false);
+    }
+  }, [accessToken, isAuthenticated, isLiked, isMutatingLike, likeCount, persistLikeState]);
+
   return (
-    <div className={styles.videoContainer}>
+    <div
+      className={styles.videoContainer}
+      onClick={handleContainerClick}
+      role="button"
+      aria-label={isPaused ? "動画を再生" : "動画を一時停止"}
+    >
       <video
         ref={videoRef}
         className={styles.video}
@@ -160,7 +310,7 @@ function FeedVideo({ item, isActive, isMuted, onToggleMute, onEnded }: FeedVideo
       >
         ブラウザが動画の再生に対応していません。
       </video>
-      <div className={styles.overlayTop}>
+      <div className={styles.overlayTop} onClick={(event) => event.stopPropagation()}>
         <div className={styles.creatorBadge}>
           <Avatar name={item.creatorName} src={item.creatorAvatar} />
           <div className={styles.creatorText}>
@@ -187,9 +337,28 @@ function FeedVideo({ item, isActive, isMuted, onToggleMute, onEnded }: FeedVideo
           {isMuted ? "音声オン" : "ミュート"}
         </button>
       </div>
-      <div className={styles.overlayBottom}>
+      <div className={styles.overlayBottom} onClick={(event) => event.stopPropagation()}>
         <h1 className={styles.title}>{item.title}</h1>
         {item.description && <p className={styles.description}>{item.description}</p>}
+        <div className={styles.socialRow}>
+          <button
+            type="button"
+            className={styles.likeButton}
+            aria-pressed={isLiked}
+            onClick={(event) => {
+              event.stopPropagation();
+              void handleToggleLike();
+            }}
+            aria-label={isLiked ? "いいねを取り消す" : "いいねする"}
+            disabled={isMutatingLike}
+          >
+            <span className={styles.likeIcon} aria-hidden="true">
+              {isLiked ? "♥" : "♡"}
+            </span>
+            <span className={styles.likeCount}>{formatNumberJP(likeCount)}</span>
+          </button>
+        </div>
+        {feedback && <p className={styles.feedback}>{feedback}</p>}
       </div>
     </div>
   );
@@ -201,6 +370,7 @@ type FeedVerticalViewerProps = {
 };
 
 export default function FeedVerticalViewer({ items, initialId }: FeedVerticalViewerProps) {
+  const supabase = useMemo(() => getBrowserSupabaseClient(), []);
   const initialIndex = useMemo(() => {
     if (!initialId) {
       return 0;
@@ -214,6 +384,9 @@ export default function FeedVerticalViewer({ items, initialId }: FeedVerticalVie
   const [activeIndex, setActiveIndex] = useState(initialIndex);
   const [isMuted, setIsMuted] = useState(true);
   const activeIndexRef = useRef(initialIndex);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [likedMap, setLikedMap] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     activeIndexRef.current = activeIndex;
@@ -300,6 +473,102 @@ export default function FeedVerticalViewer({ items, initialId }: FeedVerticalVie
     handleAdvance(1);
   }, [handleAdvance]);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!isMounted) {
+        return;
+      }
+      const session = data.session;
+      if (!session) {
+        setAccessToken(null);
+        setUserId(null);
+        setLikedMap({});
+        return;
+      }
+      setAccessToken(session.access_token);
+      setUserId(session.user.id);
+    };
+
+    void fetchSession();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!isMounted) {
+        return;
+      }
+      if (!session) {
+        setAccessToken(null);
+        setUserId(null);
+        setLikedMap({});
+        return;
+      }
+      setAccessToken(session.access_token);
+      setUserId(session.user.id);
+    });
+
+    return () => {
+      isMounted = false;
+      authListener?.subscription.unsubscribe();
+    };
+  }, [supabase]);
+
+  useEffect(() => {
+    let isActive = true;
+
+    const loadLikedStates = async () => {
+      if (!userId) {
+        if (isActive) {
+          setLikedMap({});
+        }
+        return;
+      }
+      const targetIds = items.map((item) => item.id);
+      if (targetIds.length === 0) {
+        if (isActive) {
+          setLikedMap({});
+        }
+        return;
+      }
+      const { data, error } = await supabase
+        .from("likes")
+        .select("video_id")
+        .eq("user_id", userId)
+        .in("video_id", targetIds);
+      if (!isActive) {
+        return;
+      }
+      if (error) {
+        console.error("いいね状態の取得に失敗しました:", error);
+        return;
+      }
+      const nextMap: Record<string, boolean> = {};
+      data?.forEach((row) => {
+        nextMap[row.video_id] = true;
+      });
+      setLikedMap(nextMap);
+    };
+
+    void loadLikedStates();
+
+    return () => {
+      isActive = false;
+    };
+  }, [items, supabase, userId]);
+
+  const handleLikeStateChange = useCallback(
+    (videoId: string, liked: boolean, _nextCount: number) => {
+      setLikedMap((prev) => {
+        if (prev[videoId] === liked) {
+          return prev;
+        }
+        return { ...prev, [videoId]: liked };
+      });
+    },
+    [],
+  );
+
   if (items.length === 0) {
     return null;
   }
@@ -324,6 +593,10 @@ export default function FeedVerticalViewer({ items, initialId }: FeedVerticalVie
               isMuted={isMuted}
               onToggleMute={handleToggleMute}
               onEnded={handleNext}
+              accessToken={accessToken}
+              isAuthenticated={Boolean(userId)}
+              initialLiked={likedMap[item.id] ?? false}
+              onLikeStateChange={handleLikeStateChange}
             />
           </section>
         ))}
