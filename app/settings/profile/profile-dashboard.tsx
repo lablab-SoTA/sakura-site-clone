@@ -472,30 +472,32 @@ export default function ProfileDashboard() {
                 aria-label="プロフィールを編集"
               >
                 {profile?.avatar_url ? (
-                  <Image src={profile.avatar_url} alt="プロフィール画像" fill sizes="144px" />
+                  <Image src={profile.avatar_url} alt="プロフィール画像" fill sizes="96px" />
                 ) : (
                   <span>{displayName.trim().charAt(0).toUpperCase() || "?"}</span>
                 )}
               </button>
               <div className="profile-dashboard__identity">
                 <h1 className="profile-dashboard__name">{displayName}</h1>
+              </div>
+              <div className="profile-dashboard__stats-row">
                 <p className="profile-dashboard__stat-line">
                   {formattedJoinedAt && <span>登録日 {formattedJoinedAt}</span>}
                   <span>総再生数 {totalViewCount.toLocaleString()}</span>
                   <span>いいね {totalLikeCount.toLocaleString()}</span>
                 </p>
+                {snsLinks.length > 0 && (
+                  <ul className="profile-dashboard__sns" aria-label="SNSリンク">
+                    {snsLinks.map((item) => (
+                      <li key={item.key}>
+                        <Link href={item.href} target="_blank" rel="noreferrer" aria-label={getSnsLabel(item.key)}>
+                          {snsIcons[item.key]}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
-              {snsLinks.length > 0 && (
-                <ul className="profile-dashboard__sns" aria-label="SNSリンク">
-                  {snsLinks.map((item) => (
-                    <li key={item.key}>
-                      <Link href={item.href} target="_blank" rel="noreferrer" aria-label={getSnsLabel(item.key)}>
-                        {snsIcons[item.key]}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              )}
             </div>
             {profile?.bio ? (
               <p className="profile-dashboard__bio">{profile.bio}</p>
