@@ -6,7 +6,11 @@ const TouchNavBar = dynamic(() => import("@/components/TouchNavBar"), {
   ssr: false,
   loading: () => (
     <div className="touch-nav touch-nav--footer" aria-hidden="true">
-      <span className="sr-only">ナビゲーションを読み込み中...</span>
+      <span>ホーム</span>
+      <span>フィード</span>
+      <span aria-hidden="true">＋</span>
+      <span>検索</span>
+      <span>ログイン</span>
     </div>
   ),
 });

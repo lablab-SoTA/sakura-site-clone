@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -9,13 +9,15 @@ type TouchNavBarProps = {
   variant: "header" | "footer";
 };
 
-type NavKey = "home" | "feed" | "upload" | "account";
+type NavKey = "home" | "feed" | "upload" | "search" | "account";
 
 type NavItem = {
   key: NavKey;
   label: string;
   href: string;
   match: (path: string) => boolean;
+  ariaLabel?: string;
+  hideLabel?: boolean;
 };
 
 type Rect = {
@@ -40,9 +42,17 @@ const BASE_NAV_ITEMS: ReadonlyArray<NavItem> = [
   },
   {
     key: "upload",
-    label: "追加",
+    label: "",
     href: "/upload",
     match: (path) => path.startsWith("/upload"),
+    ariaLabel: "アップロード",
+    hideLabel: true,
+  },
+  {
+    key: "search",
+    label: "検索",
+    href: "/search",
+    match: (path) => path.startsWith("/search"),
   },
   {
     key: "account",
@@ -306,16 +316,32 @@ export default function TouchNavBar({ variant }: TouchNavBarProps) {
 
   const visualIndex = isPressing ? dragIndex ?? activeIndex : activeIndex;
 
+  const navClassName = [
+    "touch-nav",
+    `touch-nav--${variant}`,
+    isPressing ? "touch-nav--pressing" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const navStyle = useMemo<CSSProperties>(
+    () => ({
+      gridTemplateColumns: `repeat(${navItems.length}, minmax(0, 1fr))`,
+    }),
+    [navItems.length],
+  );
+
   return (
     <div
       ref={navRef}
-      className={`touch-nav touch-nav--${variant}${isPressing ? " touch-nav--pressing" : ""}`}
+      className={navClassName}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerEnd}
       onPointerLeave={handlePointerCancel}
       onPointerCancel={handlePointerCancel}
       role="navigation"
       aria-label={variant === "header" ? "主要ナビゲーション" : "フッターナビゲーション"}
+      style={navStyle}
     >
       {activeRect && (
         <div
@@ -343,24 +369,39 @@ export default function TouchNavBar({ variant }: TouchNavBarProps) {
       {navItems.map((item, index) => {
         const isActive = activeIndex === index;
         const isPreview = visualIndex === index && isPressing;
+        const isIconOnly = item.hideLabel === true;
+        const accessibleLabel = item.ariaLabel ?? item.label;
+        const buttonClassName = [
+          "touch-nav__btn",
+          isActive ? "touch-nav__btn--active" : "",
+          isPreview ? "touch-nav__btn--preview" : "",
+          isIconOnly ? "touch-nav__btn--icon-only" : "",
+          item.key === "upload" ? "touch-nav__btn--upload" : "",
+        ]
+          .filter(Boolean)
+          .join(" ");
         return (
           <button
             key={item.key}
             type="button"
-            className={`touch-nav__btn${isActive ? " touch-nav__btn--active" : ""}${
-              isPreview ? " touch-nav__btn--preview" : ""
-            }`}
+            className={buttonClassName}
             data-nav-index={index}
             onPointerDown={(event) => handlePointerDown(event, index)}
             onClick={(event) => handleClick(event, index)}
+            aria-label={isIconOnly && accessibleLabel ? accessibleLabel : undefined}
           >
             <span className="touch-nav__icon" aria-hidden="true">
               {item.key === "home" && <HomeIcon />}
               {item.key === "feed" && <FeedIcon />}
               {item.key === "upload" && <PlusSquareIcon />}
+              {item.key === "search" && <SearchIcon />}
               {item.key === "account" && <AccountIcon />}
             </span>
-            <span className="touch-nav__label">{item.label}</span>
+            {isIconOnly ? (
+              accessibleLabel ? <span className="sr-only">{accessibleLabel}</span> : null
+            ) : (
+              <span className="touch-nav__label">{item.label}</span>
+            )}
           </button>
         );
       })}
@@ -410,6 +451,15 @@ function PlusSquareIcon() {
         strokeWidth="1.5"
         strokeLinecap="round"
       />
+    </svg>
+  );
+}
+
+function SearchIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="24" height="24" className="touch-nav__svg" fill="none">
+      <circle cx="11" cy="11" r="5" stroke="currentColor" strokeWidth="1.6" />
+      <path d="m15.6 15.6 3.4 3.4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
     </svg>
   );
 }
