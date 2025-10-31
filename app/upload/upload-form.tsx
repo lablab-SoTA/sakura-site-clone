@@ -116,6 +116,8 @@ export default function UploadForm() {
   const thumbnailInputRef = useRef<HTMLInputElement>(null);
   const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
   const [thumbnailPreviewUrl, setThumbnailPreviewUrl] = useState<string | null>(null);
+  const [videoOrientation, setVideoOrientation] = useState<"portrait" | "landscape" | "square" | null>(null);
+  const [videoDimensions, setVideoDimensions] = useState<{ width: number; height: number } | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -312,6 +314,8 @@ export default function UploadForm() {
   useEffect(() => {
     if (!file) {
       setVideoPreviewUrl(null);
+      setVideoOrientation(null);
+      setVideoDimensions(null);
       if (step === "confirm") {
         setStep("details");
       }
@@ -325,6 +329,72 @@ export default function UploadForm() {
       URL.revokeObjectURL(url);
     };
   }, [file, step]);
+
+  useEffect(() => {
+    if (!file) {
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    const probeVideo = document.createElement("video");
+    let isCancelled = false;
+
+    const handleLoadedMetadata = () => {
+      if (isCancelled) {
+        return;
+      }
+      const width = probeVideo.videoWidth;
+      const height = probeVideo.videoHeight;
+
+      if (!width || !height) {
+        setVideoOrientation(null);
+        setVideoDimensions(null);
+        return;
+      }
+
+      const nextOrientation: "portrait" | "landscape" | "square" =
+        height > width ? "portrait" : width > height ? "landscape" : "square";
+
+      setVideoOrientation(nextOrientation);
+      setVideoDimensions({ width, height });
+    };
+
+    const handleError = () => {
+      if (isCancelled) {
+        return;
+      }
+      console.error("動画のメタデータ取得に失敗しました");
+      setVideoOrientation(null);
+      setVideoDimensions(null);
+    };
+
+    probeVideo.preload = "metadata";
+    probeVideo.muted = true;
+    probeVideo.src = objectUrl;
+    probeVideo.addEventListener("loadedmetadata", handleLoadedMetadata);
+    probeVideo.addEventListener("error", handleError);
+
+    return () => {
+      isCancelled = true;
+      probeVideo.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      probeVideo.removeEventListener("error", handleError);
+      probeVideo.src = "";
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [file]);
+
+  useEffect(() => {
+    if (!file) {
+      return;
+    }
+    if (videoOrientation === "portrait" && target !== "feed") {
+      setTarget("feed");
+      setSeriesMode("new-series");
+      setSeriesId("");
+      setSeasonId("");
+      setError(null);
+    }
+  }, [file, target, videoOrientation]);
 
   useEffect(() => {
     if (!thumbnailFile) {
@@ -385,6 +455,8 @@ export default function UploadForm() {
     const nextFile = event.target.files?.[0] ?? null;
     const normalizedFile = normalizeSelectedFile(nextFile, "video");
     setFile(normalizedFile);
+    setVideoOrientation(null);
+    setVideoDimensions(null);
     setError(null);
     setMessage(null);
     setStep("details");
@@ -398,6 +470,10 @@ export default function UploadForm() {
   };
 
   const handleSelectTarget = (nextTarget: UploadTarget) => {
+    if (nextTarget === "series" && videoOrientation === "portrait") {
+      setError("縦型動画はフィード投稿として公開されます。シリーズ設定は不要です。");
+      return;
+    }
     setTarget(nextTarget);
     setError(null);
     if (nextTarget === "feed") {
@@ -439,6 +515,8 @@ export default function UploadForm() {
     setNoRepost(false);
     setMosaicConfirmed(false);
     setIsAdult(false);
+    setVideoOrientation(null);
+    setVideoDimensions(null);
     setNewSeriesTitleRaw("");
     setNewSeriesTitleClean("");
     setNewSeriesDescription("");
@@ -903,6 +981,24 @@ export default function UploadForm() {
             <p className="upload-form__orientation-hint">
               フィード投稿は縦型（9:16）推奨、シリーズ投稿は横型（16:9）推奨です。
             </p>
+            {videoDimensions && (
+              <p className="upload-form__notice upload-form__notice--inline">
+                検出された解像度: {videoDimensions.width}×{videoDimensions.height}（
+                {videoOrientation === "portrait"
+                  ? "縦型"
+                  : videoOrientation === "landscape"
+                  ? "横型"
+                  : videoOrientation === "square"
+                  ? "正方形"
+                  : "判定不可"}
+                ）
+              </p>
+            )}
+            {videoOrientation === "portrait" && (
+              <p className="upload-form__notice upload-form__notice--inline">
+                縦型動画のためフィード投稿のみ選択できます。シリーズ設定は不要です。
+              </p>
+            )}
             <p className="upload-form__notice upload-form__notice--inline">アップロードできる動画サイズの上限は50MBです。</p>
           </section>
 
@@ -965,16 +1061,23 @@ export default function UploadForm() {
                     className="upload-form__scenario-toggle"
                     onClick={() => handleSelectTarget("series")}
                     aria-pressed={target === "series"}
+                    disabled={videoOrientation === "portrait"}
                   >
                     シリーズ投稿（横動画）
                   </button>
-                  {target === "series" && (
+                  {videoOrientation === "portrait" ? (
+                    <div className="upload-form__scenario-body">
+                      <p className="upload-form__hint">
+                        縦型動画ではシリーズ投稿を利用できません。横型動画を選ぶとシリーズ投稿を選択できます。
+                      </p>
+                    </div>
+                  ) : target === "series" ? (
                     <div className="upload-form__scenario-body">
                       <p className="upload-form__hint">
                         シリーズ作品として横型のエピソードを追加します。新規シリーズ作成と既存シリーズへの追加が選択できます。
                       </p>
                     </div>
-                  )}
+                  ) : null}
                 </div>
               </div>
 
